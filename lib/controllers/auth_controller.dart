@@ -35,6 +35,7 @@ class AuthController extends GetxController {
 
   // ── Connexion ──────────────────────────────────────────────────────────────
   Future<void> login() async {
+    if (isLoading.value) return;
     clearErrors();
 
     final email    = emailValue.value.trim();

@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
+import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/services/rapport_service.dart';
+import 'package:ismgl/core/utils/download_share_helper.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/responses/rapport_response.dart';
 
@@ -94,12 +96,27 @@ class RapportController extends GetxController {
   Future<void> exportPDF(String type) async {
     isExporting.value = true;
     try {
+      final api = Get.find<ApiService>();
       final result = await _service.exportPDF(type: type);
-      if (result['success'] == true) {
-        pdfUrl.value = result['data']?['pdf_url'] as String?;
-        AppHelpers.showSuccess('Rapport généré avec succès');
+      if (result['success'] != true) {
+        AppHelpers.showError(
+          result['message']?.toString() ?? 'Erreur export PDF',
+        );
+        return;
+      }
+      final ref = DownloadShareHelper.extractExportFileRef(result['data']);
+      if (ref == null || ref.isEmpty) {
+        AppHelpers.showError('Lien du fichier non reçu');
+        return;
+      }
+      final name = DownloadShareHelper.exportFilename(type, 'pdf');
+      final ok =
+          await DownloadShareHelper.downloadExportAndShare(api, ref, name);
+      if (ok) {
+        pdfUrl.value = ref;
+        AppHelpers.showSuccess('Fichier prêt — enregistrez ou partagez');
       } else {
-        AppHelpers.showError('Erreur export PDF');
+        AppHelpers.showError('Échec du téléchargement du rapport');
       }
     } finally {
       isExporting.value = false;

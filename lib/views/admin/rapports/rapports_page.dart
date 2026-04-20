@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/core/services/api_service.dart';
+import 'package:ismgl/core/utils/download_share_helper.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 
 class RapportsPage extends StatefulWidget {
@@ -61,15 +62,45 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
     });
   }
 
-  Future<void> _exportPDF(String type) async {
+  /// [format]: `pdf`, `excel`, `csv`
+  Future<void> _exportRapport(String type, String format) async {
     setState(() => _isExporting = true);
-    final result = await _api.get('/rapports/export/pdf', params: {'type': type});
-    setState(() => _isExporting = false);
+    try {
+      final endpoint = switch (format) {
+        'excel' => '/rapports/export/excel',
+        'csv' => '/rapports/export/csv',
+        _ => '/rapports/export/pdf',
+      };
+      final ext = switch (format) {
+        'excel' => 'xlsx',
+        'csv' => 'csv',
+        _ => 'pdf',
+      };
 
-    if (result['success'] == true) {
-      AppHelpers.showSuccess('Rapport généré: ${result['data']['pdf_url']}');
-    } else {
-      AppHelpers.showError('Erreur export');
+      final result = await _api.get(endpoint, params: {'type': type});
+      if (result['success'] != true) {
+        AppHelpers.showError(
+          result['message']?.toString() ?? 'Erreur export',
+        );
+        return;
+      }
+
+      final ref = DownloadShareHelper.extractExportFileRef(result['data']);
+      if (ref == null || ref.isEmpty) {
+        AppHelpers.showError('Lien du fichier non reçu par l’API');
+        return;
+      }
+
+      final name = DownloadShareHelper.exportFilename(type, ext);
+      final ok =
+          await DownloadShareHelper.downloadExportAndShare(_api, ref, name);
+      if (ok) {
+        AppHelpers.showSuccess('Fichier prêt — enregistrez ou partagez');
+      } else {
+        AppHelpers.showError('Échec du téléchargement du rapport');
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -90,12 +121,83 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
           else
             PopupMenuButton<String>(
               icon: const Icon(Icons.download_outlined),
-              onSelected: _exportPDF,
+              onSelected: (v) {
+                final parts = v.split('|');
+                if (parts.length == 2) {
+                  _exportRapport(parts[0], parts[1]);
+                }
+              },
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'general',  child: Text('Export Général')),
-                const PopupMenuItem(value: 'paiements', child: Text('Export Paiements')),
-                const PopupMenuItem(value: 'impayes',  child: Text('Export Impayés')),
-                const PopupMenuItem(value: 'filieres', child: Text('Export Filières')),
+                const PopupMenuItem(
+                  enabled: false,
+                  height: 36,
+                  child: Text(
+                    'PDF',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'general|pdf',
+                  child: Text('Général'),
+                ),
+                const PopupMenuItem(
+                  value: 'paiements|pdf',
+                  child: Text('Paiements'),
+                ),
+                const PopupMenuItem(
+                  value: 'impayes|pdf',
+                  child: Text('Impayés'),
+                ),
+                const PopupMenuItem(
+                  value: 'filieres|pdf',
+                  child: Text('Filières'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  enabled: false,
+                  height: 36,
+                  child: Text(
+                    'Excel',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'general|excel',
+                  child: Text('Général'),
+                ),
+                const PopupMenuItem(
+                  value: 'paiements|excel',
+                  child: Text('Paiements'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  enabled: false,
+                  height: 36,
+                  child: Text(
+                    'CSV',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'general|csv',
+                  child: Text('Général'),
+                ),
+                const PopupMenuItem(
+                  value: 'paiements|csv',
+                  child: Text('Paiements'),
+                ),
               ],
             ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAll),
@@ -140,21 +242,28 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
       child: Column(
         children: [
           // Stats cards
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
-            children: [
-              _StatCard('Étudiants', '${_stats?['total_etudiants_actifs'] ?? 0}', Icons.people_alt_rounded, AppTheme.primary),
-              _StatCard('Inscriptions', '${_stats?['total_inscriptions'] ?? 0}', Icons.how_to_reg_rounded, AppTheme.success),
-              _StatCard('Paiements Aujourd\'hui', '${_stats?['paiements_aujourdhui'] ?? 0}', Icons.payments_rounded, AppTheme.warning),
-              _StatCard('Montant Aujourd\'hui',
-                  AppHelpers.formatMontant(double.tryParse(_stats?['montant_aujourdhui']?.toString() ?? '0') ?? 0),
-                  Icons.account_balance_wallet_rounded, AppTheme.info),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
+              final aspectRatio = width < 360 ? 1.1 : 1.25;
+              return GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: aspectRatio,
+                children: [
+                  _StatCard('Étudiants', '${_stats?['total_etudiants_actifs'] ?? 0}', Icons.people_alt_rounded, AppTheme.primary),
+                  _StatCard('Inscriptions', '${_stats?['total_inscriptions'] ?? 0}', Icons.how_to_reg_rounded, AppTheme.success),
+                  _StatCard('Paiements Aujourd\'hui', '${_stats?['paiements_aujourdhui'] ?? 0}', Icons.payments_rounded, AppTheme.warning),
+                  _StatCard('Montant Aujourd\'hui',
+                      AppHelpers.formatMontant(double.tryParse(_stats?['montant_aujourdhui']?.toString() ?? '0') ?? 0),
+                      Icons.account_balance_wallet_rounded, AppTheme.info),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           // Rapport journalier
@@ -169,9 +278,16 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
                 ..._rapportJour.map((r) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(r['nom_mode'] ?? '', style: const TextStyle(color: AppTheme.textSecondary)),
+                      Expanded(
+                        child: Text(
+                          r['nom_mode'] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppTheme.textSecondary),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -193,19 +309,28 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
 
   Widget _StatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Container(padding: const EdgeInsets.all(7), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
               child: Icon(icon, color: color, size: 20)),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-              Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+              ),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, height: 1.1),
+              ),
             ],
           ),
         ],
@@ -255,15 +380,26 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(12)),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(children: [
+                Expanded(
+                  child: Row(children: [
                   Container(width: 12, height: 12, decoration: BoxDecoration(color: item[2] as Color, shape: BoxShape.circle)),
                   const SizedBox(width: 10),
-                  Text(item[0] as String, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Expanded(
+                    child: Text(
+                      item[0] as String,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
                 ]),
-                Text(AppHelpers.formatMontant(item[1] as double),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(AppHelpers.formatMontant(item[1] as double),
                     style: TextStyle(fontWeight: FontWeight.bold, color: item[2] as Color)),
+                ),
               ],
             ),
           )),
@@ -279,15 +415,18 @@ class _RapportsPageState extends State<RapportsPage> with SingleTickerProviderSt
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 180,
-                  child: PieChart(PieChartData(
-                    sections: [
-                      PieChartSectionData(value: percu > 0 ? percu : 0.01, color: AppTheme.success, title: 'Perçu', radius: 65,
-                          titleStyle: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                      PieChartSectionData(value: impaye > 0 ? impaye : 0.01, color: AppTheme.error, title: 'Impayé', radius: 65,
-                          titleStyle: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                    ],
-                    sectionsSpace: 3, centerSpaceRadius: 40,
-                  )),
+                  child: PieChart(
+                    PieChartData(
+                      sections: [
+                        PieChartSectionData(value: percu > 0 ? percu : 0.01, color: AppTheme.success, title: 'Perçu', radius: 65,
+                            titleStyle: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                        PieChartSectionData(value: impaye > 0 ? impaye : 0.01, color: AppTheme.error, title: 'Impayé', radius: 65,
+                            titleStyle: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ],
+                      sectionsSpace: 3,
+                      centerSpaceRadius: 40,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -6,7 +6,8 @@ import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/models/paiement_model.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
+import 'package:ismgl/views/shared/widgets/error_widget.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 
 class MesPaiementsPage extends StatefulWidget {

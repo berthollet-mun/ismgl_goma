@@ -30,7 +30,7 @@ class _EtudiantFormPageState extends State<EtudiantFormPage> {
   final _sang      = TextEditingController();
 
   String _sexe  = 'M';
-  String _nat   = 'Congolaise';
+  final String _nat   = 'Congolaise';
 
   @override
   void dispose() {
@@ -177,7 +177,7 @@ class _EtudiantFormPageState extends State<EtudiantFormPage> {
 
   Widget _sexeField() {
     return DropdownButtonFormField<String>(
-      value: _sexe,
+      initialValue: _sexe,
       decoration: InputDecoration(
         labelText: 'Sexe *',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),

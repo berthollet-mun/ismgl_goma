@@ -28,15 +28,17 @@ class FiliereModel {
   });
 
   factory FiliereModel.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
+    String asString(dynamic v) => v?.toString() ?? '';
     return FiliereModel(
-      idFiliere:        json['id_filiere']       as int,
-      codeFiliere:      json['code_filiere']     as String,
-      nomFiliere:       json['nom_filiere']      as String,
-      idDepartement:    json['id_departement']   as int,
+      idFiliere:        asInt(json['id_filiere']),
+      codeFiliere:      asString(json['code_filiere']),
+      nomFiliere:       asString(json['nom_filiere']),
+      idDepartement:    asInt(json['id_departement']),
       nomDepartement:   json['nom_departement']  as String?,
       nomFaculte:       json['nom_faculte']      as String?,
       diplomeDelivre:   json['diplome_delivre']  as String?,
-      dureeEtudes:      json['duree_etudes']     as int? ?? 3,
+      dureeEtudes:      asInt(json['duree_etudes']) == 0 ? 3 : asInt(json['duree_etudes']),
       description:      json['description']      as String?,
       estActif:         json['est_actif'] == true || json['est_actif'] == 1,
       dateCreation:     json['date_creation']    as String?,

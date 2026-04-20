@@ -4,6 +4,78 @@ import 'package:intl/intl.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 
 class AppHelpers {
+  static void _showSnackbar({
+    required String title,
+    required String message,
+    required Color backgroundColor,
+    Icon? icon,
+    int seconds = 3,
+  }) {
+    void fallbackScaffold() {
+      final ctx = Get.context;
+      if (ctx == null) {
+        debugPrint('⚠️ Snackbar ignorée (contexte indisponible): $title');
+        return;
+      }
+      final messenger = ScaffoldMessenger.maybeOf(ctx);
+      if (messenger == null) {
+        debugPrint('⚠️ Snackbar ignorée (ScaffoldMessenger indisponible): $title');
+        return;
+      }
+      final mq = MediaQuery.of(ctx);
+      const barHeight = 88.0;
+      final top = mq.padding.top + 8;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              if (icon != null) ...[icon, const SizedBox(width: 8)],
+              Expanded(child: Text('$title\n$message')),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: backgroundColor,
+          duration: Duration(seconds: seconds),
+          margin: EdgeInsets.only(
+            left: 12,
+            right: 12,
+            bottom: mq.size.height - top - barHeight,
+          ),
+        ),
+      );
+    }
+
+    try {
+      final overlayCtx = Get.overlayContext ?? Get.context;
+      if (overlayCtx != null) {
+        final mq = MediaQuery.of(overlayCtx);
+        Get.snackbar(
+          title,
+          message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: backgroundColor,
+          colorText: Colors.white,
+          icon: icon,
+          shouldIconPulse: false,
+          margin: EdgeInsets.only(
+            top: mq.padding.top + 8,
+            left: 12,
+            right: 12,
+          ),
+          borderRadius: 10,
+          duration: Duration(seconds: seconds),
+          snackStyle: SnackStyle.FLOATING,
+          maxWidth: mq.size.width - 24,
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Get.snackbar indisponible, fallback Scaffold: $e');
+    }
+    fallbackScaffold();
+  }
+
   // Formater montant
   static String formatMontant(double montant, {String devise = 'FC'}) {
     final formatter = NumberFormat('#,##0.00', 'fr_FR');
@@ -30,56 +102,37 @@ class AppHelpers {
 
   // Notifications Snackbar
   static void showSuccess(String message) {
-    Get.snackbar(
-      '✅ Succès',
-      message,
+    _showSnackbar(
+      title: '✅ Succès',
+      message: message,
       backgroundColor: AppTheme.success,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
-      borderRadius: 12,
-      margin: const EdgeInsets.all(16),
       icon: const Icon(Icons.check_circle, color: Colors.white),
     );
   }
 
   static void showError(String message) {
-    Get.snackbar(
-      '❌ Erreur',
-      message,
+    _showSnackbar(
+      title: '❌ Erreur',
+      message: message,
       backgroundColor: AppTheme.error,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 4),
-      borderRadius: 12,
-      margin: const EdgeInsets.all(16),
       icon: const Icon(Icons.error_outline, color: Colors.white),
+      seconds: 4,
     );
   }
 
   static void showWarning(String message) {
-    Get.snackbar(
-      '⚠️ Attention',
-      message,
+    _showSnackbar(
+      title: '⚠️ Attention',
+      message: message,
       backgroundColor: AppTheme.warning,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
-      borderRadius: 12,
-      margin: const EdgeInsets.all(16),
     );
   }
 
   static void showInfo(String message) {
-    Get.snackbar(
-      'ℹ️ Information',
-      message,
+    _showSnackbar(
+      title: 'ℹ️ Information',
+      message: message,
       backgroundColor: AppTheme.info,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
-      borderRadius: 12,
-      margin: const EdgeInsets.all(16),
     );
   }
 

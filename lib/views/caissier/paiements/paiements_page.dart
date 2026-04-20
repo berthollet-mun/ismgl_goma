@@ -6,9 +6,9 @@ import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/models/paiement_model.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
-import 'package:ismgl/views/shared/widgets/status_chip.dart%20&%20role_badge.dart';
+import 'package:ismgl/views/shared/widgets/status_chip.dart';
 
 class PaiementsPage extends StatefulWidget {
   const PaiementsPage({super.key});
@@ -22,6 +22,8 @@ class _PaiementsPageState extends State<PaiementsPage> {
 
   List<PaiementModel> _paiements = [];
   bool   _isLoading   = true;
+  bool   _isCreating  = false;
+  int?   _isCancellingId;
   int    _currentPage = 1;
   int    _totalPages  = 1;
   int    _total       = 0;
@@ -78,6 +80,7 @@ class _PaiementsPageState extends State<PaiementsPage> {
   }
 
   Future<void> _annuler(PaiementModel p) async {
+    if (_isCancellingId == p.idPaiement) return;
     final motifCtrl = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
@@ -103,11 +106,13 @@ class _PaiementsPageState extends State<PaiementsPage> {
     );
 
     if (confirm == true && motifCtrl.text.isNotEmpty) {
+      setState(() => _isCancellingId = p.idPaiement);
       final result = await _api.patch('/paiements/${p.idPaiement}/annuler', data: {'motif': motifCtrl.text});
       if (result['success'] == true) {
         AppHelpers.showSuccess('Paiement annulé');
-        _load(reset: true);
+        await _load(reset: true);
       }
+      if (mounted) setState(() => _isCancellingId = null);
     }
   }
 
@@ -124,9 +129,22 @@ class _PaiementsPageState extends State<PaiementsPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Get.toNamed(AppRoutes.caissierNouveauPaiement)?.then((_) => _load(reset: true)),
-        label: const Text('Nouveau'),
-        icon: const Icon(Icons.add),
+        onPressed: _isCreating
+            ? null
+            : () async {
+                setState(() => _isCreating = true);
+                await Get.toNamed(AppRoutes.caissierNouveauPaiement);
+                await _load(reset: true);
+                if (mounted) setState(() => _isCreating = false);
+              },
+        label: _isCreating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Text('Nouveau'),
+        icon: _isCreating ? null : const Icon(Icons.add),
         backgroundColor: AppTheme.primary,
       ),
       body: Column(
@@ -170,7 +188,7 @@ class _PaiementsPageState extends State<PaiementsPage> {
                         onRefresh: () => _load(reset: true),
                         child: ListView.separated(
                           controller: _scrollCtrl,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                           itemCount: _paiements.length + (_isLoading ? 1 : 0),
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) {
@@ -200,16 +218,36 @@ class _PaiementsPageState extends State<PaiementsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(p.numeroPaiement, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                Expanded(
+                  child: Text(
+                    p.numeroPaiement,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 StatusChip(status: p.statutPaiement, type: 'paiement'),
               ],
             ),
             const SizedBox(height: 6),
-            Text(p.nomCompletEtudiant ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-            Text(p.nomFrais ?? '', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            Text(
+              p.nomCompletEtudiant ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            Text(
+              p.nomFrais ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +258,15 @@ class _PaiementsPageState extends State<PaiementsPage> {
                       children: [
                         const Icon(Icons.payment, size: 14, color: AppTheme.textSecondary),
                         const SizedBox(width: 4),
-                        Text(p.modePaiement ?? '', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            p.modePaiement ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -235,7 +281,16 @@ class _PaiementsPageState extends State<PaiementsPage> {
                         children: [
                           const Icon(Icons.receipt, size: 14, color: AppTheme.info),
                           const SizedBox(width: 4),
-                          Text(p.numeroRecu!, style: const TextStyle(color: AppTheme.info, fontSize: 11)),
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              p.numeroRecu!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(color: AppTheme.info, fontSize: 11),
+                            ),
+                          ),
                         ],
                       ),
                   ],
@@ -254,9 +309,18 @@ class _PaiementsPageState extends State<PaiementsPage> {
                     label: const Text('Reçu', style: TextStyle(fontSize: 12)),
                   ),
                   TextButton.icon(
-                    onPressed: () => _annuler(p),
-                    icon: const Icon(Icons.cancel_outlined, size: 16, color: AppTheme.error),
-                    label: const Text('Annuler', style: TextStyle(fontSize: 12, color: AppTheme.error)),
+                    onPressed: _isCancellingId == p.idPaiement ? null : () => _annuler(p),
+                    icon: _isCancellingId == p.idPaiement
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cancel_outlined, size: 16, color: AppTheme.error),
+                    label: Text(
+                      _isCancellingId == p.idPaiement ? '...' : 'Annuler',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.error),
+                    ),
                   ),
                 ],
               ),

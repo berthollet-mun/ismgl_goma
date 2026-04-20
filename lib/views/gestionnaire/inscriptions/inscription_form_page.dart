@@ -70,7 +70,7 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
               child: Obx(() {
                 final etudiants = _etudiantCtrl.etudiants;
                 return DropdownButtonFormField<int>(
-                  value: _selectedEtudiant,
+                  initialValue: _selectedEtudiant,
                   isExpanded: true,
                   decoration: _inputDecoration('Sélectionner un étudiant *'),
                   items: etudiants
@@ -96,7 +96,7 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
                   Obx(() {
                     final annees = _configCtrl.annees;
                     return DropdownButtonFormField<int>(
-                      value: _selectedAnnee,
+                      initialValue: _selectedAnnee,
                       isExpanded: true,
                       decoration: _inputDecoration('Année académique *'),
                       items: annees
@@ -117,7 +117,7 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
                   Obx(() {
                     final filieres = _configCtrl.filieres;
                     return DropdownButtonFormField<int>(
-                      value: _selectedFiliere,
+                      initialValue: _selectedFiliere,
                       isExpanded: true,
                       decoration: _inputDecoration('Filière *'),
                       items: filieres
@@ -138,7 +138,7 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
                   Obx(() {
                     final niveaux = _configCtrl.niveaux;
                     return DropdownButtonFormField<int>(
-                      value: _selectedNiveau,
+                      initialValue: _selectedNiveau,
                       isExpanded: true,
                       decoration: _inputDecoration('Niveau *'),
                       items: niveaux
@@ -156,7 +156,7 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
                   }),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _typeInscription,
+                    initialValue: _typeInscription,
                     decoration: _inputDecoration('Type d\'inscription *'),
                     items: ['Nouvelle', 'Réinscription', 'Transfert']
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))

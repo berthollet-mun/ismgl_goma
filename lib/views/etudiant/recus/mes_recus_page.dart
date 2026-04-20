@@ -1,10 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/core/services/api_service.dart';
+import 'package:ismgl/core/utils/download_share_helper.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 
 class MesRecusPage extends StatefulWidget {
@@ -19,6 +22,7 @@ class _MesRecusPageState extends State<MesRecusPage> {
 
   List<dynamic> _recus = [];
   bool _isLoading = true;
+  int? _busyRecuId;
 
   @override
   void initState() {
@@ -35,12 +39,42 @@ class _MesRecusPageState extends State<MesRecusPage> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _generer(int idRecu) async {
-    final result = await _api.get('/recus/$idRecu/generate');
-    if (result['success'] == true) {
-      AppHelpers.showSuccess('Reçu généré avec succès');
-    } else {
-      AppHelpers.showError('Erreur génération reçu');
+  String _extensionRecu(Uint8List bytes) {
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46) {
+      return 'pdf';
+    }
+    return 'html';
+  }
+
+  Future<void> _telechargerRecu(dynamic idRaw, String? numeroRecu) async {
+    final id = idRaw is int ? idRaw : int.tryParse('$idRaw');
+    if (id == null) return;
+
+    setState(() => _busyRecuId = id);
+    try {
+      debugPrint('🧾 Téléchargement reçu id=$id');
+      final bytes = await _api.fetchBytes('/recus/$id/download');
+      if (bytes == null || bytes.isEmpty) {
+        AppHelpers.showError(
+          'Impossible de télécharger le reçu (réponse vide ou accès refusé)',
+        );
+        return;
+      }
+      final safeNum =
+          (numeroRecu ?? 'recu').replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      final name = '$safeNum.${_extensionRecu(bytes)}';
+      final ok = await DownloadShareHelper.shareBytes(bytes, name);
+      if (ok) {
+        AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
+      } else {
+        AppHelpers.showError('Partage du reçu impossible');
+      }
+    } finally {
+      if (mounted) setState(() => _busyRecuId = null);
     }
   }
 
@@ -70,6 +104,11 @@ class _MesRecusPageState extends State<MesRecusPage> {
   }
 
   Widget _buildCard(Map<String, dynamic> r) {
+    final idRecu = r['id_recu'];
+    final busy = _busyRecuId != null &&
+        idRecu != null &&
+        _busyRecuId == (idRecu is int ? idRecu : int.tryParse('$idRecu'));
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -107,9 +146,23 @@ class _MesRecusPageState extends State<MesRecusPage> {
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
-              onPressed: () => _generer(r['id_recu']),
-              icon: const Icon(Icons.download_outlined, size: 16),
-              label: const Text('Télécharger le reçu', style: TextStyle(fontSize: 12)),
+              onPressed: busy
+                  ? null
+                  : () => _telechargerRecu(
+                        idRecu,
+                        r['numero_recu']?.toString(),
+                      ),
+              icon: busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_outlined, size: 16),
+              label: Text(
+                busy ? 'Préparation…' : 'Télécharger le reçu',
+                style: const TextStyle(fontSize: 12),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppTheme.primary,
                 side: const BorderSide(color: AppTheme.primary),

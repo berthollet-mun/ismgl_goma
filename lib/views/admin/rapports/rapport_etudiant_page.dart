@@ -40,12 +40,12 @@ class _RapportEtudiantPageState extends State<RapportEtudiantPage> {
         final paiements = _ctrl.paiementsEtudiant;
 
         if (ins == null) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.info_outline, size: 64, color: AppTheme.textSecondary),
-                const SizedBox(height: 16),
+                Icon(Icons.info_outline, size: 64, color: AppTheme.textSecondary),
+                SizedBox(height: 16),
                 Text('Aucune inscription trouvée pour l\'année courante',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppTheme.textSecondary)),

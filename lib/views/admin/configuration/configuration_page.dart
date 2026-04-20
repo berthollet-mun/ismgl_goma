@@ -6,7 +6,6 @@ import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 import 'package:ismgl/views/shared/widgets/button.dart';
-import 'package:ismgl/views/shared/widgets/form_field.dart';
 
 class ConfigurationPage extends StatefulWidget {
   const ConfigurationPage({super.key});
@@ -23,9 +22,14 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   List<dynamic> _typesFrais = [];
   List<dynamic> _niveaux   = [];
   List<dynamic> _facultes  = [];
-  List<dynamic> _departements = [];
+  final List<dynamic> _departements = [];
   List<dynamic> _filieres  = [];
   bool _isLoading = true;
+  bool _isCreatingAnnee = false;
+  bool _isCreatingTypeFrais = false;
+  bool _isCreatingFiliere = false;
+  bool _isCreatingFaculte = false;
+  int? _busyAnneeId;
 
   @override
   void initState() {
@@ -147,25 +151,28 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
-                    Text(annee['code_annee'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    if (isCourante) ...[
-                      const SizedBox(width: 8),
+                    Text(
+                      annee['code_annee'] ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    if (isCourante)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(8)),
                         child: const Text('Courante', style: TextStyle(color: Colors.white, fontSize: 10)),
                       ),
-                    ],
-                    if (isCloturee) ...[
-                      const SizedBox(width: 8),
+                    if (isCloturee)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(8)),
                         child: const Text('Clôturée', style: TextStyle(color: Colors.white, fontSize: 10)),
                       ),
-                    ],
                   ],
                 ),
                 Text('Du ${AppHelpers.formatDate(annee['date_debut'])} au ${AppHelpers.formatDate(annee['date_fin'])}',
@@ -175,14 +182,22 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           ),
           if (!isCourante && !isCloturee)
             TextButton(
-              onPressed: () => _setAnneeCourante(annee['id_annee_academique']),
-              child: const Text('Définir courante'),
+              onPressed: _busyAnneeId == annee['id_annee_academique']
+                  ? null
+                  : () => _setAnneeCourante(annee['id_annee_academique']),
+              child: _busyAnneeId == annee['id_annee_academique']
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Définir courante'),
             ),
           if (!isCloturee)
             IconButton(
-              icon: const Icon(Icons.lock_outline, color: AppTheme.warning, size: 20),
+              icon: _busyAnneeId == annee['id_annee_academique']
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.lock_outline, color: AppTheme.warning, size: 20),
               tooltip: 'Clôturer',
-              onPressed: () => _cloturerAnnee(annee['id_annee_academique']),
+              onPressed: _busyAnneeId == annee['id_annee_academique']
+                  ? null
+                  : () => _cloturerAnnee(annee['id_annee_academique']),
             ),
         ],
       ),
@@ -190,11 +205,13 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   }
 
   Future<void> _setAnneeCourante(int id) async {
+    setState(() => _busyAnneeId = id);
     final result = await _api.patch('/config/annees/$id/courante');
     if (result['success'] == true) {
       AppHelpers.showSuccess('Année définie comme courante');
-      _loadAll();
+      await _loadAll();
     }
+    if (mounted) setState(() => _busyAnneeId = null);
   }
 
   Future<void> _cloturerAnnee(int id) async {
@@ -203,11 +220,13 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
       confirmText: 'Clôturer', confirmColor: AppTheme.warning,
     );
     if (!confirm) return;
+    setState(() => _busyAnneeId = id);
     final result = await _api.patch('/config/annees/$id/cloturer');
     if (result['success'] == true) {
       AppHelpers.showSuccess('Année clôturée');
-      _loadAll();
+      await _loadAll();
     }
+    if (mounted) setState(() => _busyAnneeId = null);
   }
 
   void _showAnneeDialog() {
@@ -217,25 +236,40 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AnimatedPadding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: AlertDialog(
         title: const Text('Nouvelle Année Académique'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: 2024-2025)')),
-            const SizedBox(height: 12),
-            TextField(controller: debutCtrl, decoration: const InputDecoration(labelText: 'Date début (AAAA-MM-JJ)')),
-            const SizedBox(height: 12),
-            TextField(controller: finCtrl, decoration: const InputDecoration(labelText: 'Date fin (AAAA-MM-JJ)')),
-          ],
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: 2024-2025)')),
+                const SizedBox(height: 12),
+                TextField(controller: debutCtrl, decoration: const InputDecoration(labelText: 'Date début (AAAA-MM-JJ)')),
+                const SizedBox(height: 12),
+                TextField(controller: finCtrl, decoration: const InputDecoration(labelText: 'Date fin (AAAA-MM-JJ)')),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('Annuler')),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: _isCreatingAnnee
+                ? null
+                : () async {
+              setState(() => _isCreatingAnnee = true);
               final code = codeCtrl.text.trim();
               final parts = code.split('-');
-              if (parts.length < 2) return;
+              if (parts.length < 2) {
+                if (mounted) setState(() => _isCreatingAnnee = false);
+                return;
+              }
 
               final result = await _api.post('/config/annees', data: {
                 'code_annee':   code,
@@ -248,14 +282,18 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
               Get.back();
               if (result['success'] == true) {
                 AppHelpers.showSuccess('Année créée');
-                _loadAll();
+                await _loadAll();
               } else {
                 AppHelpers.showError(result['message'] ?? 'Erreur');
               }
+              if (mounted) setState(() => _isCreatingAnnee = false);
             },
-            child: const Text('Créer'),
+            child: _isCreatingAnnee
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Créer'),
           ),
         ],
+        ),
       ),
     );
   }
@@ -334,31 +372,43 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
 
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (_, setStateDialog) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setStateDialog) => AnimatedPadding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          child: AlertDialog(
           title: const Text('Nouveau Type de Frais'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: SCOL)')),
-              const SizedBox(height: 8),
-              TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom')),
-              const SizedBox(height: 8),
-              TextField(controller: montantCtrl, decoration: const InputDecoration(labelText: 'Montant de base (FC)'),
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                title: const Text('Obligatoire', style: TextStyle(fontSize: 14)),
-                value: estOblig,
-                onChanged: (v) => setStateDialog(() => estOblig = v),
-                contentPadding: EdgeInsets.zero,
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: SCOL)')),
+                  const SizedBox(height: 8),
+                  TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom')),
+                  const SizedBox(height: 8),
+                  TextField(controller: montantCtrl, decoration: const InputDecoration(labelText: 'Montant de base (FC)'),
+                      keyboardType: TextInputType.number),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Obligatoire', style: TextStyle(fontSize: 14)),
+                    value: estOblig,
+                    onChanged: (v) => setStateDialog(() => estOblig = v),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           actions: [
             TextButton(onPressed: Get.back, child: const Text('Annuler')),
             ElevatedButton(
-              onPressed: () async {
+            onPressed: _isCreatingTypeFrais
+                ? null
+                : () async {
+              setState(() => _isCreatingTypeFrais = true);
                 final result = await _api.post('/config/types-frais', data: {
                   'code_frais':    codeCtrl.text.trim().toUpperCase(),
                   'nom_frais':     nomCtrl.text.trim(),
@@ -366,12 +416,16 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                   'est_obligatoire': estOblig,
                 });
                 Get.back();
-                if (result['success'] == true) { AppHelpers.showSuccess('Type de frais créé'); _loadAll(); }
+              if (result['success'] == true) { AppHelpers.showSuccess('Type de frais créé'); await _loadAll(); }
                 else { AppHelpers.showError(result['message'] ?? 'Erreur'); }
+              if (mounted) setState(() => _isCreatingTypeFrais = false);
               },
-              child: const Text('Créer'),
+            child: _isCreatingTypeFrais
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Créer'),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -430,32 +484,40 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
     final codeCtrl   = TextEditingController();
     final dureeCtrl  = TextEditingController(text: '3');
     final diplomeCtrl = TextEditingController();
-    int? selectedDept;
-
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (_, setStateDialog) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setStateDialog) => AnimatedPadding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          child: AlertDialog(
           title: const Text('Nouvelle Filière'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: IG)')),
-                const SizedBox(height: 8),
-                TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom de la filière')),
-                const SizedBox(height: 8),
-                TextField(controller: diplomeCtrl, decoration: const InputDecoration(labelText: 'Diplôme délivré')),
-                const SizedBox(height: 8),
-                TextField(controller: dureeCtrl, decoration: const InputDecoration(labelText: 'Durée (années)'),
-                    keyboardType: TextInputType.number),
-              ],
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: IG)')),
+                  const SizedBox(height: 8),
+                  TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom de la filière')),
+                  const SizedBox(height: 8),
+                  TextField(controller: diplomeCtrl, decoration: const InputDecoration(labelText: 'Diplôme délivré')),
+                  const SizedBox(height: 8),
+                  TextField(controller: dureeCtrl, decoration: const InputDecoration(labelText: 'Durée (années)'),
+                      keyboardType: TextInputType.number),
+                ],
+              ),
             ),
           ),
           actions: [
             TextButton(onPressed: Get.back, child: const Text('Annuler')),
             ElevatedButton(
-              onPressed: () async {
+            onPressed: _isCreatingFiliere
+                ? null
+                : () async {
+              setState(() => _isCreatingFiliere = true);
                 final result = await _api.post('/filieres', data: {
                   'code_filiere':    codeCtrl.text.trim().toUpperCase(),
                   'nom_filiere':     nomCtrl.text.trim(),
@@ -464,13 +526,17 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                   'duree_etudes':    int.tryParse(dureeCtrl.text) ?? 3,
                 });
                 Get.back();
-                if (result['success'] == true) { AppHelpers.showSuccess('Filière créée'); _loadAll(); }
+              if (result['success'] == true) { AppHelpers.showSuccess('Filière créée'); await _loadAll(); }
                 else { AppHelpers.showError(result['message'] ?? 'Erreur'); }
+              if (mounted) setState(() => _isCreatingFiliere = false);
               },
-              child: const Text('Créer'),
+            child: _isCreatingFiliere
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Créer'),
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -529,34 +595,50 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AnimatedPadding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: AlertDialog(
         title: const Text('Nouvelle Faculté'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: FST)')),
-            const SizedBox(height: 8),
-            TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom de la faculté')),
-            const SizedBox(height: 8),
-            TextField(controller: doyenCtrl, decoration: const InputDecoration(labelText: 'Doyen (optionnel)')),
-          ],
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code (ex: FST)')),
+                const SizedBox(height: 8),
+                TextField(controller: nomCtrl, decoration: const InputDecoration(labelText: 'Nom de la faculté')),
+                const SizedBox(height: 8),
+                TextField(controller: doyenCtrl, decoration: const InputDecoration(labelText: 'Doyen (optionnel)')),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('Annuler')),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: _isCreatingFaculte
+                ? null
+                : () async {
+              setState(() => _isCreatingFaculte = true);
               final result = await _api.post('/config/facultes', data: {
                 'code_faculte': codeCtrl.text.trim().toUpperCase(),
                 'nom_faculte':  nomCtrl.text.trim(),
                 'doyen':        doyenCtrl.text.trim().isEmpty ? null : doyenCtrl.text.trim(),
               });
               Get.back();
-              if (result['success'] == true) { AppHelpers.showSuccess('Faculté créée'); _loadAll(); }
+              if (result['success'] == true) { AppHelpers.showSuccess('Faculté créée'); await _loadAll(); }
               else { AppHelpers.showError(result['message'] ?? 'Erreur'); }
+              if (mounted) setState(() => _isCreatingFaculte = false);
             },
-            child: const Text('Créer'),
+            child: _isCreatingFaculte
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Créer'),
           ),
         ],
+        ),
       ),
     );
   }

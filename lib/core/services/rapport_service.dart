@@ -1,87 +1,78 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/core/services/api_service.dart';
 
 class RapportService extends GetxService {
   final ApiService _api = Get.find<ApiService>();
 
-  /// Statistiques globales.
-  Future<Map<String, dynamic>> getStatistiques({int? idAnnee}) =>
-      _api.get('/rapports/statistiques',
-          params: {if (idAnnee != null) 'annee': idAnnee});
+  Future<Map<String, dynamic>> getStatistiques({int? idAnnee}) {
+    debugPrint('📊 RapportService.getStatistiques($idAnnee)');
+    return _api.get(
+      '/rapports/statistiques',
+      params: {if (idAnnee != null) 'annee': idAnnee},
+    );
+  }
 
-  /// Rapport paiements par période.
-  Future<Map<String, dynamic>> getPaiements({
-    String? dateDebut,
-    String? dateFin,
-    int? caissier,
-  }) =>
-      _api.get('/rapports/paiements', params: {
-        if (dateDebut != null) 'date_debut': dateDebut,
-        if (dateFin   != null) 'date_fin':   dateFin,
-        if (caissier  != null) 'caissier':   caissier,
-      });
+  Future<Map<String, dynamic>> getFinancier({int? idAnnee}) {
+    debugPrint('📊 RapportService.getFinancier($idAnnee)');
+    return _api.get(
+      '/rapports/financier',
+      params: {if (idAnnee != null) 'annee': idAnnee},
+    );
+  }
 
-  /// Rapport journalier caisse.
-  Future<Map<String, dynamic>> getJournalier({String? date}) =>
-      _api.get('/rapports/journalier',
-          params: {if (date != null) 'date': date});
+  Future<Map<String, dynamic>> getImpayes({int? idAnnee}) {
+    debugPrint('📊 RapportService.getImpayes($idAnnee)');
+    return _api.get(
+      '/rapports/impayes',
+      params: {if (idAnnee != null) 'annee': idAnnee},
+    );
+  }
 
-  /// Students with outstanding balance.
-  Future<Map<String, dynamic>> getImpayes({int? idAnnee}) =>
-      _api.get('/rapports/impayes',
-          params: {if (idAnnee != null) 'annee': idAnnee});
+  Future<Map<String, dynamic>> getFilieres({int? idAnnee}) {
+    debugPrint('📊 RapportService.getFilieres($idAnnee)');
+    return _api.get(
+      '/rapports/filieres',
+      params: {if (idAnnee != null) 'annee': idAnnee},
+    );
+  }
 
-  /// Statistiques par filière.
-  Future<Map<String, dynamic>> getFilieres({int? idAnnee}) =>
-      _api.get('/rapports/filieres',
-          params: {if (idAnnee != null) 'annee': idAnnee});
+  Future<Map<String, dynamic>> getJournalier({String? date}) {
+    debugPrint('📊 RapportService.getJournalier($date)');
+    return _api.get(
+      '/rapports/journalier',
+      params: {if (date != null && date.isNotEmpty) 'date': date},
+    );
+  }
 
-  /// Récapitulatif financier.
-  Future<Map<String, dynamic>> getFinancier({int? idAnnee}) =>
-      _api.get('/rapports/financier',
-          params: {if (idAnnee != null) 'annee': idAnnee});
+  Future<Map<String, dynamic>> getSituationEtudiant(int idEtudiant, {int? idAnnee}) {
+    debugPrint('📊 RapportService.getSituationEtudiant($idEtudiant)');
+    return _api.get(
+      '/rapports/etudiant/$idEtudiant',
+      params: {if (idAnnee != null) 'annee': idAnnee},
+    );
+  }
 
-  /// Situation financière d'un étudiant.
-  Future<Map<String, dynamic>> getSituationEtudiant(int idEtudiant,
-          {int? idAnnee}) =>
-      _api.get('/rapports/etudiant/$idEtudiant',
-          params: {if (idAnnee != null) 'annee': idAnnee});
+  Future<Map<String, dynamic>> exportPDF({required String type}) {
+    debugPrint('📊 RapportService.exportPDF($type)');
+    return _api.get('/rapports/export/pdf', params: {'type': type});
+  }
 
-  /// Export PDF.
-  Future<Map<String, dynamic>> exportPDF({
-    required String type,
-    String? dateDebut,
-    String? dateFin,
-  }) =>
-      _api.get('/rapports/export/pdf', params: {
-        'type': type,
-        if (dateDebut != null) 'date_debut': dateDebut,
-        if (dateFin   != null) 'date_fin':   dateFin,
-      });
-
-  /// Export CSV.
-  Future<Map<String, dynamic>> exportCSV({
-    required String type,
-    String? dateDebut,
-    String? dateFin,
-  }) =>
-      _api.get('/rapports/export/csv', params: {
-        'type': type,
-        if (dateDebut != null) 'date_debut': dateDebut,
-        if (dateFin   != null) 'date_fin':   dateFin,
-      });
-
-  /// Logs d'activité.
   Future<Map<String, dynamic>> getLogs({
-    int page = 1,
     String? module,
     String? dateDebut,
-    String? dateFin,
-  }) =>
-      _api.get('/rapports/logs', params: {
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    debugPrint('📊 RapportService.getLogs(page=$page, module=$module)');
+    return _api.get(
+      '/rapports/logs',
+      params: {
         'page': page,
-        if (module    != null) 'module':     module,
-        if (dateDebut != null) 'date_debut': dateDebut,
-        if (dateFin   != null) 'date_fin':   dateFin,
-      });
+        'page_size': pageSize,
+        if (module != null && module.isNotEmpty) 'module': module,
+        if (dateDebut != null && dateDebut.isNotEmpty) 'date_debut': dateDebut,
+      },
+    );
+  }
 }

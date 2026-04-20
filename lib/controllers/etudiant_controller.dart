@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/core/services/etudiant_service.dart';
 import 'package:ismgl/core/utils/helpers.dart';
@@ -28,6 +28,7 @@ class EtudiantController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    debugPrint('🟢 EtudiantController.onInit()');
     loadEtudiants();
   }
 
@@ -36,6 +37,13 @@ class EtudiantController extends GetxController {
       currentPage.value = 1;
       etudiants.clear();
     }
+    
+    debugPrint('\n📥 EtudiantController.loadEtudiants()');
+    debugPrint('   Page: ${currentPage.value}');
+    debugPrint('   Search: ${search.value}');
+    debugPrint('   Statut: ${filterStatut.value}');
+    debugPrint('   Sexe: ${filterSexe.value}');
+    
     isLoading.value = true;
     try {
       final result = await _service.getEtudiants(
@@ -45,11 +53,20 @@ class EtudiantController extends GetxController {
         statut:   filterStatut.value,
         sexe:     filterSexe.value,
       );
+      
+      debugPrint('   Response success: ${result['success']}');
+      
       if (result['success'] == true) {
+        final data = result['data'];
+        debugPrint('   Data: $data');
+        
         final resp = PaginatedResponse.fromJson(
-          result['data'] as Map<String, dynamic>,
+          data as Map<String, dynamic>,
           (j) => EtudiantModel.fromJson(j),
         );
+        
+        debugPrint('   Parsed items: ${resp.items.length}');
+        
         if (reset || currentPage.value == 1) {
           etudiants.assignAll(resp.items);
         } else {
@@ -57,8 +74,14 @@ class EtudiantController extends GetxController {
         }
         totalItems.value = resp.totalItems;
         totalPages.value = resp.totalPages;
+        
+        debugPrint('   ✅ Total items: ${totalItems.value}, Pages: ${totalPages.value}');
+      } else {
+        debugPrint('   ❌ Error: ${result['message']}');
+        AppHelpers.showError(result['message'] ?? 'Erreur lors du chargement');
       }
     } catch (e) {
+      debugPrint('   ❌ Exception: $e');
       AppHelpers.showError('Erreur réseau: $e');
     } finally {
       isLoading.value = false;
@@ -66,26 +89,34 @@ class EtudiantController extends GetxController {
   }
 
   Future<void> loadMonProfil() async {
+    debugPrint('\n📥 EtudiantController.loadMonProfil()');
     isLoading.value = true;
     try {
       final result = await _service.getMe();
       if (result['success'] == true) {
         monProfil.value = EtudiantModel.fromJson(
             result['data'] as Map<String, dynamic>);
+        debugPrint('   ✅ Profile loaded: ${monProfil.value?.nom}');
       }
+    } catch (e) {
+      debugPrint('   ❌ Exception: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> loadDetail(int id) async {
+    debugPrint('\n📥 EtudiantController.loadDetail($id)');
     isLoading.value = true;
     try {
       final result = await _service.getEtudiant(id);
       if (result['success'] == true) {
         selectedEtudiant.value = EtudiantModel.fromJson(
             result['data'] as Map<String, dynamic>);
+        debugPrint('   ✅ Detail loaded: ${selectedEtudiant.value?.nom}');
       }
+    } catch (e) {
+      debugPrint('   ❌ Exception: $e');
     } finally {
       isLoading.value = false;
     }
@@ -96,6 +127,9 @@ class EtudiantController extends GetxController {
     String? photoProfilPath,
     String? photoIdentitePath,
   }) async {
+    debugPrint('\n📤 EtudiantController.createEtudiant()');
+    debugPrint('   Data: $data');
+    
     isSubmitting.value = true;
     try {
       final result = await _service.createEtudiant(
@@ -103,46 +137,69 @@ class EtudiantController extends GetxController {
         photoProfilPath:   photoProfilPath,
         photoIdentitePath: photoIdentitePath,
       );
+      
       if (result['success'] == true) {
+        debugPrint('   ✅ Étudiant créé avec succès');
         AppHelpers.showSuccess('Étudiant créé avec succès');
         await loadEtudiants(reset: true);
         return true;
       } else {
+        debugPrint('   ❌ Erreur: ${result['message']}');
         AppHelpers.showError(result['message'] ?? 'Erreur création');
         return false;
       }
+    } catch (e) {
+      debugPrint('   ❌ Exception: $e');
+      AppHelpers.showError('Erreur: $e');
+      return false;
     } finally {
       isSubmitting.value = false;
     }
   }
 
   Future<void> updateStatut(EtudiantModel etudiant, String statut) async {
-    final result = await _service.updateStatut(etudiant.idEtudiant, statut);
-    if (result['success'] == true) {
-      AppHelpers.showSuccess('Statut mis à jour');
-      await loadEtudiants(reset: true);
-    } else {
-      AppHelpers.showError(result['message'] ?? 'Erreur');
+    debugPrint('\n📤 EtudiantController.updateStatut(${etudiant.idEtudiant}, $statut)');
+    
+    isSubmitting.value = true;
+    try {
+      final result = await _service.updateStatut(etudiant.idEtudiant, statut);
+      if (result['success'] == true) {
+        debugPrint('   ✅ Statut mis à jour avec succès');
+        AppHelpers.showSuccess('Statut mis à jour');
+        await loadEtudiants(reset: true);
+      } else {
+        debugPrint('   ❌ Erreur: ${result['message']}');
+        AppHelpers.showError(result['message'] ?? 'Erreur');
+      }
+    } catch (e) {
+      debugPrint('   ❌ Exception: $e');
+      AppHelpers.showError('Erreur: $e');
+    } finally {
+      isSubmitting.value = false;
     }
   }
 
   void onSearch(String value) {
+    debugPrint('🔍 Search: $value');
     search.value = value;
     if (value.length >= 3 || value.isEmpty) loadEtudiants(reset: true);
   }
 
   void setFilterStatut(String? statut) {
+    debugPrint('🏷️ Filter statut: $statut');
     filterStatut.value = statut;
     loadEtudiants(reset: true);
   }
 
   void setFilterSexe(String? sexe) {
+    debugPrint('🏷️ Filter sexe: $sexe');
     filterSexe.value = sexe;
     loadEtudiants(reset: true);
   }
 
   void loadMore() {
     if (currentPage.value < totalPages.value && !isLoading.value) {
+      debugPrint('📥 Load more page: ${currentPage.value + 1}');
       currentPage.value++;
       loadEtudiants();
     }

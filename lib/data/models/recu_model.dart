@@ -58,18 +58,20 @@ class RecuModel {
   });
 
   factory RecuModel.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
+    String asString(dynamic v) => v?.toString() ?? '';
     return RecuModel(
-      idRecu:               json['id_recu']              as int,
-      numeroRecu:           json['numero_recu']          as String,
-      idPaiement:           json['id_paiement']          as int,
-      idEtudiant:           json['id_etudiant']          as int,
+      idRecu:               asInt(json['id_recu']),
+      numeroRecu:           asString(json['numero_recu']),
+      idPaiement:           asInt(json['id_paiement']),
+      idEtudiant:           asInt(json['id_etudiant']),
       montantTotal:         double.tryParse(json['montant_total']?.toString() ?? '0') ?? 0,
-      dateEmission:         json['date_emission']        as String,
-      emisPar:              json['emis_par']             as int,
+      dateEmission:         asString(json['date_emission']),
+      emisPar:              asInt(json['emis_par']),
       fichierPdf:           json['fichier_pdf']          as String?,
       estImprime:           json['est_imprime'] == true || json['est_imprime'] == 1,
       dateImpression:       json['date_impression']      as String?,
-      nombreImpressions:    json['nombre_impressions']   as int? ?? 0,
+      nombreImpressions:    asInt(json['nombre_impressions']),
       dateCreation:         json['date_creation']        as String?,
       numeroPaiement:       json['numero_paiement']      as String?,
       datePaiement:         json['date_paiement']        as String?,

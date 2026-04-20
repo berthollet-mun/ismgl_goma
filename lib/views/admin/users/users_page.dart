@@ -6,9 +6,9 @@ import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/models/user_model.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
-import 'package:ismgl/views/shared/widgets/status_chip.dart%20&%20role_badge.dart';
+import 'package:ismgl/views/shared/widgets/role_badge.dart';
 
 class UsersPage extends StatefulWidget {
   const UsersPage({super.key});
@@ -27,6 +27,9 @@ class _UsersPageState extends State<UsersPage> {
   int    _total                = 0;
   String _search               = '';
   String? _filterRole;
+  bool _isCreating = false;
+  int? _actionUserId;
+  String? _actionName;
 
   final _searchCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
@@ -87,20 +90,42 @@ class _UsersPageState extends State<UsersPage> {
   }
 
   Future<void> _toggleActive(UserModel user) async {
+    if (_actionUserId == user.id) return;
+    setState(() {
+      _actionUserId = user.id;
+      _actionName = 'toggle';
+    });
     final result = await _api.patch('/users/${user.id}/toggle');
     if (result['success'] == true) {
       AppHelpers.showSuccess('Statut modifié avec succès');
-      _load(reset: true);
+      await _load(reset: true);
     } else {
       AppHelpers.showError(result['message'] ?? 'Erreur');
+    }
+    if (mounted) {
+      setState(() {
+        _actionUserId = null;
+        _actionName = null;
+      });
     }
   }
 
   Future<void> _unlock(UserModel user) async {
+    if (_actionUserId == user.id) return;
+    setState(() {
+      _actionUserId = user.id;
+      _actionName = 'unlock';
+    });
     final result = await _api.patch('/users/${user.id}/unlock');
     if (result['success'] == true) {
       AppHelpers.showSuccess('Compte déverrouillé');
-      _load(reset: true);
+      await _load(reset: true);
+    }
+    if (mounted) {
+      setState(() {
+        _actionUserId = null;
+        _actionName = null;
+      });
     }
   }
 
@@ -113,12 +138,22 @@ class _UsersPageState extends State<UsersPage> {
     );
 
     if (confirm) {
+      setState(() {
+        _actionUserId = user.id;
+        _actionName = 'delete';
+      });
       final result = await _api.delete('/users/${user.id}');
       if (result['success'] == true) {
         AppHelpers.showSuccess('Utilisateur supprimé');
-        _load(reset: true);
+        await _load(reset: true);
       } else {
         AppHelpers.showError(result['message'] ?? 'Erreur');
+      }
+      if (mounted) {
+        setState(() {
+          _actionUserId = null;
+          _actionName = null;
+        });
       }
     }
   }
@@ -139,9 +174,22 @@ class _UsersPageState extends State<UsersPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Get.toNamed(AppRoutes.adminUserForm)?.then((_) => _load(reset: true)),
-        label: const Text('Nouvel utilisateur'),
-        icon: const Icon(Icons.person_add_rounded),
+        onPressed: _isCreating
+            ? null
+            : () async {
+                setState(() => _isCreating = true);
+                await Get.toNamed(AppRoutes.adminUserForm);
+                await _load(reset: true);
+                if (mounted) setState(() => _isCreating = false);
+              },
+        label: _isCreating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Text('Nouvel utilisateur'),
+        icon: _isCreating ? null : const Icon(Icons.person_add_rounded),
         backgroundColor: AppTheme.primary,
       ),
       body: Column(
@@ -161,7 +209,7 @@ class _UsersPageState extends State<UsersPage> {
                         onRefresh: () => _load(reset: true),
                         child: ListView.separated(
                           controller: _scrollCtrl,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                           itemCount: _users.length + (_isLoading ? 1 : 0),
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) {
@@ -279,33 +327,55 @@ class _UsersPageState extends State<UsersPage> {
                   ],
                 ),
                 // Actions
-                Row(
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 0,
                   children: [
                     if (user.compteBloque)
                       IconButton(
-                        icon: const Icon(Icons.lock_open, color: AppTheme.warning, size: 20),
+                        icon: _actionUserId == user.id && _actionName == 'unlock'
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.lock_open, color: AppTheme.warning, size: 20),
                         tooltip: 'Déverrouiller',
-                        onPressed: () => _unlock(user),
+                        onPressed: _actionUserId == user.id ? null : () => _unlock(user),
                       ),
                     IconButton(
-                      icon: Icon(
-                        user.estActif ? Icons.toggle_on : Icons.toggle_off,
-                        color: user.estActif ? AppTheme.success : Colors.grey,
-                        size: 20,
-                      ),
+                      icon: _actionUserId == user.id && _actionName == 'toggle'
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              user.estActif ? Icons.toggle_on : Icons.toggle_off,
+                              color: user.estActif ? AppTheme.success : Colors.grey,
+                              size: 20,
+                            ),
                       tooltip: user.estActif ? 'Désactiver' : 'Activer',
-                      onPressed: () => _toggleActive(user),
+                      onPressed: _actionUserId == user.id ? null : () => _toggleActive(user),
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: AppTheme.primary, size: 20),
                       tooltip: 'Modifier',
-                      onPressed: () => Get.toNamed(AppRoutes.adminUserForm, arguments: user)
-                          ?.then((_) => _load(reset: true)),
+                      onPressed: _actionUserId == user.id
+                          ? null
+                          : () => Get.toNamed(AppRoutes.adminUserForm, arguments: user)
+                              ?.then((_) => _load(reset: true)),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
+                      icon: _actionUserId == user.id && _actionName == 'delete'
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
                       tooltip: 'Supprimer',
-                      onPressed: () => _delete(user),
+                      onPressed: _actionUserId == user.id ? null : () => _delete(user),
                     ),
                   ],
                 ),

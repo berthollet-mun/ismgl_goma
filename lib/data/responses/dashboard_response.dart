@@ -1,4 +1,5 @@
 /// Modèles de réponse pour les dashboards (admin, caissier, etc.)
+library;
 
 class DashboardAnneeCourante {
   final int idAnneeAcademique;

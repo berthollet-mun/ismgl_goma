@@ -15,7 +15,11 @@ class InscriptionDetailPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(ins.numeroInscription ?? 'Détail Inscription'),
+        title: Text(
+          ins.numeroInscription ?? 'Détail Inscription',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -81,6 +85,8 @@ class _StatusCard extends StatelessWidget {
         children: [
           Text(
             inscription.nomCompletDisplay,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -219,7 +225,7 @@ class _Row extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 110,
             child: Text(label,
                 style:
                     const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
@@ -244,13 +250,15 @@ class _ActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<InscriptionController>();
-    return Row(
+    return Obx(() => Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => ctrl.valider(inscription),
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Valider'),
+            onPressed: ctrl.isSubmitting.value ? null : () => ctrl.valider(inscription),
+            icon: ctrl.isSubmitting.value
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_circle_outline),
+            label: Text(ctrl.isSubmitting.value ? '...' : 'Valider'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.success,
               foregroundColor: Colors.white,
@@ -262,7 +270,7 @@ class _ActionButtons extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => _showRejectDialog(context, ctrl),
+            onPressed: ctrl.isSubmitting.value ? null : () => _showRejectDialog(context, ctrl),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Rejeter'),
             style: ElevatedButton.styleFrom(
@@ -274,7 +282,7 @@ class _ActionButtons extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ));
   }
 
   void _showRejectDialog(BuildContext ctx, InscriptionController ctrl) {

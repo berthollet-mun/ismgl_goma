@@ -21,17 +21,27 @@ class NotificationModel {
     this.dateCreation,
   });
 
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
+  static String _asString(dynamic v) => v?.toString() ?? '';
+
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      idNotification:   json['id_notification']   as int,
-      idUser:           json['id_user']           as int? ?? 0,
-      titre:            json['titre']             as String,
-      message:          json['message']           as String,
-      typeNotification: json['type_notification'] as String? ?? 'Info',
+      idNotification:   _asInt(json['id_notification'] ?? json['id']),
+      idUser:           _asInt(json['id_user']),
+      titre:            _asString(json['titre']),
+      message:          _asString(json['message']),
+      typeNotification: _asString(json['type_notification']).isEmpty
+          ? 'Info'
+          : _asString(json['type_notification']),
       estLu:            json['est_lu'] == true || json['est_lu'] == 1,
-      dateLecture:      json['date_lecture']      as String?,
-      lien:             json['lien']              as String?,
-      dateCreation:     json['date_creation']     as String?,
+      dateLecture:      json['date_lecture'] as String?,
+      lien:             json['lien'] as String?,
+      dateCreation:     json['date_creation'] as String?,
     );
   }
 

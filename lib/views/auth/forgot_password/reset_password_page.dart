@@ -63,7 +63,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Choisissez un nouveau mot de passe sécurisé.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary),

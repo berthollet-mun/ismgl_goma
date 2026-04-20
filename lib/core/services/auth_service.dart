@@ -11,16 +11,63 @@ class AuthService extends GetxService {
 
   // ── Connexion ──────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> login(String email, String password) async {
+    // Always clear the previous local session before a new login attempt.
+    // This prevents stale token/role/user when another user connects.
+    await _storage.clearSession();
+
     final result = await _api.post('/auth/login', data: {
-      'email':        email,
+      'email': email.trim(),
       'mot_de_passe': password,
     });
 
-    if (result['success'] == true) {
-      final response = AuthResponse.fromJson(result['data'] as Map<String, dynamic>);
-      await _storage.saveToken(response.token);
-      await _storage.saveRefreshToken(response.refreshToken);
-      await _saveUserToStorage(response.user);
+    print('🔍 Réponse login: $result');
+
+    if (result['success'] == true && result['data'] != null) {
+      try {
+        final data = result['data'] as Map<String, dynamic>;
+        print('📦 Data reçue: $data');
+        
+        final response = AuthResponse.fromJson(data);
+        
+        // Vérification du token
+        if (response.token.isEmpty) {
+          print('❌ ERREUR: Token vide reçu du serveur');
+          print('   token: "${response.token}"');
+          print('   refreshToken: "${response.refreshToken}"');
+          print('   expiresIn: ${response.expiresIn}');
+          return {
+            'success': false,
+            'message': 'Erreur serveur: Token absent',
+          };
+        }
+
+        print('✅ Token reçu: ${response.token.substring(0, 30)}...');
+        
+        // Sauvegarder le token
+        await _storage.saveToken(response.token);
+        print('✅ Token sauvegardé dans SharedPreferences');
+        
+        final savedToken = _storage.getToken();
+        print('✅ Token vérifié après sauvegarde: ${savedToken?.substring(0, 30)}...');
+        
+        if (response.refreshToken.isNotEmpty) {
+          await _storage.saveRefreshToken(response.refreshToken);
+        }
+        await _storage.saveTokenExpiry(
+          DateTime.now().add(Duration(seconds: response.expiresIn)),
+        );
+        
+        await _saveUserToStorage(response.user);
+        print('✅ Données utilisateur sauvegardées');
+      } catch (e) {
+        print('❌ Erreur parsing réponse: $e');
+        return {
+          'success': false,
+          'message': 'Erreur parsing: $e',
+        };
+      }
+    } else {
+      print('❌ Connexion échouée: ${result['message']}');
     }
     return result;
   }

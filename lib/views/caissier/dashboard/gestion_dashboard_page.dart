@@ -4,7 +4,6 @@ import 'package:ismgl/app/routes/app_routes.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/services/storage_service.dart';
-import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 
@@ -21,6 +20,7 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
 
   Map<String, dynamic>? _data;
   bool _isLoading = true;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -29,12 +29,16 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     final result = await _api.get('/dashboard');
+    if (!mounted) return;
     if (result['success'] == true) {
       setState(() => _data = result['data']);
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -62,9 +66,22 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Get.toNamed(AppRoutes.gestionEtudiantForm),
-        label: const Text('Nouvel Étudiant'),
-        icon: const Icon(Icons.person_add_rounded),
+        onPressed: _isCreating
+            ? null
+            : () async {
+                setState(() => _isCreating = true);
+                await Get.toNamed(AppRoutes.gestionEtudiantForm);
+                await _load();
+                if (mounted) setState(() => _isCreating = false);
+              },
+        label: _isCreating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Text('Nouvel Étudiant'),
+        icon: _isCreating ? null : const Icon(Icons.person_add_rounded),
         backgroundColor: AppTheme.primary,
       ),
     );
@@ -78,17 +95,28 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bonjour, ${_storage.getUserPrenom()}!',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                const Text('Gestionnaire', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  'Bonjour, ${_storage.getUserPrenom()}!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const Text(
+                  'Gestionnaire',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Column(
             children: [
               Text('${_data?['inscriptions_en_attente'] ?? 0}',
@@ -104,31 +132,51 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
   Widget _buildStatsRow() {
     final total = _data?['total_etudiants'] ?? 0;
 
-    return Row(
-      children: [
-        _StatCard('Étudiants', '$total', Icons.people_alt_rounded, AppTheme.primary),
-        const SizedBox(width: 12),
-        _StatCard('Filières', '${(_data?['repartition_par_filiere'] as List?)?.length ?? 0}',
-            Icons.school_rounded, AppTheme.success),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        return Row(
+          children: [
+            _StatCard('Étudiants', '$total', Icons.people_alt_rounded, AppTheme.primary, compact: compact),
+            const SizedBox(width: 12),
+            _StatCard(
+              'Filières',
+              '${(_data?['repartition_par_filiere'] as List?)?.length ?? 0}',
+              Icons.school_rounded,
+              AppTheme.success,
+              compact: compact,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _StatCard(String label, String value, IconData icon, Color color) {
+  Widget _StatCard(String label, String value, IconData icon, Color color, {bool compact = false}) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 8),
-            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value, style: TextStyle(fontSize: compact ? 20 : 24, fontWeight: FontWeight.bold, color: color)),
+            ),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            ),
           ],
         ),
       ),
@@ -136,13 +184,20 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
   }
 
   Widget _buildActions() {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
-        Expanded(child: _ActionBtn('Étudiants', Icons.people_rounded, AppTheme.primary,
-            () => Get.toNamed(AppRoutes.gestionEtudiants))),
-        const SizedBox(width: 12),
-        Expanded(child: _ActionBtn('Inscriptions', Icons.how_to_reg_rounded, AppTheme.success,
-            () => Get.toNamed(AppRoutes.gestionInscriptions))),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 44) / 2,
+          child: _ActionBtn('Étudiants', Icons.people_rounded, AppTheme.primary,
+              () => Get.toNamed(AppRoutes.gestionEtudiants)),
+        ),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 44) / 2,
+          child: _ActionBtn('Inscriptions', Icons.how_to_reg_rounded, AppTheme.success,
+              () => Get.toNamed(AppRoutes.gestionInscriptions)),
+        ),
       ],
     );
   }
@@ -160,7 +215,14 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
       ),
@@ -203,8 +265,18 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${i['prenom']} ${i['nom']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(i['nom_filiere'] ?? '', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      Text(
+                        '${i['prenom']} ${i['nom']}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        i['nom_filiere'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      ),
                     ],
                   ),
                 ),

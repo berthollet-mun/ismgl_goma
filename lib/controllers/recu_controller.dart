@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:get/get.dart';
+import 'package:ismgl/core/services/api_service.dart';
 import 'package:ismgl/core/services/recu_service.dart';
+import 'package:ismgl/core/utils/download_share_helper.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/models/recu_model.dart';
 
@@ -28,15 +32,34 @@ class RecuController extends GetxController {
     }
   }
 
-  Future<void> generatePDF(int id) async {
+  static String _extensionRecu(Uint8List bytes) {
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46) {
+      return 'pdf';
+    }
+    return 'html';
+  }
+
+  /// Télécharge le reçu (HTML/PDF) depuis l’API puis ouvre le partage système.
+  Future<void> downloadRecu(int id) async {
     isGenerating.value = true;
     try {
-      final result = await _service.generateRecu(id);
-      if (result['success'] == true) {
-        pdfUrl.value = result['data']?['pdf_url'] as String?;
-        AppHelpers.showSuccess('Reçu généré: ${result['data']?['numero_recu']}');
+      final api = Get.find<ApiService>();
+      final bytes = await api.fetchBytes('/recus/$id/download');
+      if (bytes == null || bytes.isEmpty) {
+        AppHelpers.showError('Impossible de télécharger le reçu');
+        return;
+      }
+      final name = 'recu_$id.${_extensionRecu(bytes)}';
+      final ok = await DownloadShareHelper.shareBytes(bytes, name);
+      if (ok) {
+        pdfUrl.value = name;
+        AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
       } else {
-        AppHelpers.showError(result['message'] ?? 'Erreur génération PDF');
+        AppHelpers.showError('Partage du reçu impossible');
       }
     } finally {
       isGenerating.value = false;

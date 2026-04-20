@@ -52,7 +52,7 @@ class _AdminLogsPageState extends State<AdminLogsPage> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: DropdownButtonFormField<String>(
-              value: _selectedModule,
+              initialValue: _selectedModule,
               dropdownColor: AppTheme.cardLight,
               style: const TextStyle(color: AppTheme.textPrimary),
               decoration: InputDecoration(

@@ -44,7 +44,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: AppTheme.primaryGradient,
                   shape: BoxShape.circle,
                 ),
@@ -57,7 +57,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Votre nouveau mot de passe doit contenir au moins 8 caractères, '
                 'une majuscule, un chiffre et un caractère spécial.',
                 textAlign: TextAlign.center,

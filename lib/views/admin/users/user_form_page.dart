@@ -202,7 +202,7 @@ class _UserFormPageState extends State<UserFormPage> {
                   subtitle: Text(_estActif ? 'L\'utilisateur peut se connecter' : 'Connexion désactivée'),
                   value: _estActif,
                   onChanged: (v) => setState(() => _estActif = v),
-                  activeColor: AppTheme.success,
+                  activeThumbColor: AppTheme.success,
                 ),
               ),
               const SizedBox(height: 28),

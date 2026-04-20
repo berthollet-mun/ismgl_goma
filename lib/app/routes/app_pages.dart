@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:ismgl/app/routes/app_routes.dart';
-import 'package:ismgl/app/bindings/initial_binding.dart';
 import 'package:ismgl/views/caissier/dashboard/gestion_dashboard_page.dart';
 import 'package:ismgl/views/public/splash/splash_page.dart';
 import 'package:ismgl/views/public/welcome/welcome_page.dart';
@@ -48,6 +47,7 @@ import 'package:ismgl/views/shared/notifications/notifications_page.dart';
 
 // Bindings
 import 'package:ismgl/views/admin/dashboard/admin_dashboard_binding.dart';
+import 'package:ismgl/views/admin/etudiants/etudiants_binding.dart';
 import 'package:ismgl/views/caissier/dashboard/caissier_dashboard_binding.dart';
 import 'package:ismgl/views/gestionnaire/dashboard/gestion_dashboard_binding.dart';
 import 'package:ismgl/views/etudiant/dashboard/etudiant_dashboard_binding.dart';
@@ -78,6 +78,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.adminEtudiants,
       page: () => const EtudiantsPage(),
+      binding: EtudiantsBinding(),
       middlewares: [AuthMiddleware(allowedRoles: ['Administrateur', 'Gestionnaire'])],
     ),
     GetPage(

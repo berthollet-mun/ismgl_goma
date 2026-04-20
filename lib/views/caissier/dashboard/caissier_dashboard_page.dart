@@ -21,6 +21,7 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
 
   Map<String, dynamic>? _data;
   bool _isLoading = true;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -29,18 +30,22 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     final result = await _api.get('/dashboard');
+    if (!mounted) return;
     if (result['success'] == true) {
       setState(() => _data = result['data']);
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Caisse - ISMGL', showBack: false),
+      appBar: const CustomAppBar(title: 'Caisse - ISMGL', showBack: false),
       body: _isLoading
           ? const LoadingWidget()
           : RefreshIndicator(
@@ -62,9 +67,22 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Get.toNamed(AppRoutes.caissierNouveauPaiement),
-        label: const Text('Nouveau Paiement'),
-        icon: const Icon(Icons.add),
+        onPressed: _isCreating
+            ? null
+            : () async {
+                setState(() => _isCreating = true);
+                await Get.toNamed(AppRoutes.caissierNouveauPaiement);
+                await _load();
+                if (mounted) setState(() => _isCreating = false);
+              },
+        label: _isCreating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Text('Nouveau Paiement'),
+        icon: _isCreating ? null : const Icon(Icons.add),
         backgroundColor: AppTheme.primary,
       ),
     );
@@ -88,6 +106,8 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
           const SizedBox(height: 8),
           Text(
             AppHelpers.formatMontant(double.tryParse(montant.toString()) ?? 0),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -105,9 +125,12 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
   }
 
   Widget _buildActionButtons() {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
-        Expanded(
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 44) / 2,
           child: _QuickCard(
             'Mes Paiements',
             Icons.payments_rounded,
@@ -115,8 +138,8 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             () => Get.toNamed(AppRoutes.caissierPaiements),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 44) / 2,
           child: _QuickCard(
             'Mes Reçus',
             Icons.receipt_long_rounded,
@@ -144,6 +167,8 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             const SizedBox(width: 12),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w600,
@@ -178,14 +203,26 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
           ...modes.map((m) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(m['nom_mode'] ?? '', style: const TextStyle(color: AppTheme.textSecondary)),
-                Text(
-                  AppHelpers.formatMontant(
-                    double.tryParse(m['total']?.toString() ?? '0') ?? 0,
+                Expanded(
+                  child: Text(
+                    m['nom_mode'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppTheme.textSecondary),
                   ),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    AppHelpers.formatMontant(
+                      double.tryParse(m['total']?.toString() ?? '0') ?? 0,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -244,14 +281,29 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p['nom_complet_etudiant'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                Text(p['nom_frais'] ?? '', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                Text(
+                  p['nom_complet_etudiant'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                Text(
+                  p['nom_frais'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                ),
               ],
             ),
           ),
-          Text(
-            AppHelpers.formatMontant(double.tryParse(p['montant']?.toString() ?? '0') ?? 0),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success, fontSize: 13),
+          Flexible(
+            child: Text(
+              AppHelpers.formatMontant(double.tryParse(p['montant']?.toString() ?? '0') ?? 0),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success, fontSize: 13),
+            ),
           ),
         ],
       ),

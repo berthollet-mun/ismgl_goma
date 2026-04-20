@@ -29,18 +29,22 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     final result = await _api.get('/dashboard');
+    if (!mounted) return;
     if (result['success'] == true) {
       setState(() => _data = result['data']);
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Mon Espace', showBack: false),
+      appBar: const CustomAppBar(title: 'Mon Espace', showBack: false),
       body: _isLoading
           ? const LoadingWidget()
           : RefreshIndicator(
@@ -101,8 +105,18 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(nom.trim(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(etudiant['numero_etudiant'] ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                Text(
+                  nom.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  etudiant['numero_etudiant'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -164,9 +178,11 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Mon Inscription', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Expanded(
+                child: Text('Mon Inscription', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -224,8 +240,9 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
             borderRadius: BorderRadius.circular(8),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               _FinanceItem('Total', AppHelpers.formatMontant(total), AppTheme.textSecondary),
               _FinanceItem('Payé', AppHelpers.formatMontant(paye), AppTheme.success),
@@ -247,13 +264,22 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
   }
 
   Widget _buildQuickActions() {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
-        Expanded(child: _ActionBtn('Inscription', Icons.how_to_reg_rounded, AppTheme.primary, () => Get.toNamed(AppRoutes.etudiantInscription))),
-        const SizedBox(width: 12),
-        Expanded(child: _ActionBtn('Paiements', Icons.payments_rounded, AppTheme.success, () => Get.toNamed(AppRoutes.etudiantPaiements))),
-        const SizedBox(width: 12),
-        Expanded(child: _ActionBtn('Mes Reçus', Icons.receipt_long_rounded, AppTheme.warning, () => Get.toNamed(AppRoutes.etudiantRecus))),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 56) / 3,
+          child: _ActionBtn('Inscription', Icons.how_to_reg_rounded, AppTheme.primary, () => Get.toNamed(AppRoutes.etudiantInscription)),
+        ),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 56) / 3,
+          child: _ActionBtn('Paiements', Icons.payments_rounded, AppTheme.success, () => Get.toNamed(AppRoutes.etudiantPaiements)),
+        ),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 56) / 3,
+          child: _ActionBtn('Mes Reçus', Icons.receipt_long_rounded, AppTheme.warning, () => Get.toNamed(AppRoutes.etudiantRecus)),
+        ),
       ],
     );
   }
@@ -271,7 +297,13 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 6),
-            Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -302,15 +334,22 @@ class _EtudiantDashboardPageState extends State<EtudiantDashboardPage> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(p['nom_frais'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    p['nom_frais'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Text(AppHelpers.formatDate(p['date_paiement']), style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                 ],
               ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 AppHelpers.formatMontant(double.tryParse(p['montant']?.toString() ?? '0') ?? 0),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success),

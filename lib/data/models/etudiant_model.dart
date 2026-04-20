@@ -54,19 +54,22 @@ class EtudiantModel {
   });
 
   factory EtudiantModel.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
+    String asString(dynamic v) => v?.toString() ?? '';
     return EtudiantModel(
-      idEtudiant:            json['id_etudiant']             as int,
-      idUser:                json['id_user']                 as int?,
-      numeroEtudiant:        json['numero_etudiant']         as String? ?? '',
-      matricule:             json['matricule']               as String? ??
-                             json['numero_etudiant']         as String? ?? '',
-      nom:                   json['nom']                     as String,
-      prenom:                json['prenom']                  as String,
-      email:                 json['email']                   as String,
+      idEtudiant:            asInt(json['id_etudiant']),
+      idUser:                json['id_user'] == null ? null : asInt(json['id_user']),
+      numeroEtudiant:        asString(json['numero_etudiant']),
+      matricule:             asString(json['matricule']).isNotEmpty
+                                 ? asString(json['matricule'])
+                                 : asString(json['numero_etudiant']),
+      nom:                   asString(json['nom']),
+      prenom:                asString(json['prenom']),
+      email:                 asString(json['email']),
       telephone:             json['telephone']               as String?,
-      dateNaissance:         json['date_naissance']          as String,
+      dateNaissance:         asString(json['date_naissance']),
       lieuNaissance:         json['lieu_naissance']          as String?,
-      sexe:                  json['sexe']                    as String,
+      sexe:                  asString(json['sexe']),
       nationalite:           json['nationalite']             as String?,
       adresse:               json['adresse']                 as String?,
       ville:                 json['ville']                   as String?,

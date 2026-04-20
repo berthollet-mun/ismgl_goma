@@ -15,7 +15,11 @@ class PaiementDetailPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(paiement.numeroPaiement),
+        title: Text(
+          paiement.numeroPaiement,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -163,12 +167,15 @@ class _AmountCard extends StatelessWidget {
         children: [
           const Icon(Icons.payments, color: Colors.white, size: 40),
           const SizedBox(height: 8),
-          Text(
-            AppHelpers.formatCurrency(paiement.montant),
-            style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppHelpers.formatCurrency(paiement.montant),
+              style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -244,7 +251,7 @@ class _Row extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 110,
             child: Text(label,
                 style: const TextStyle(
                     color: AppTheme.textSecondary, fontSize: 13)),

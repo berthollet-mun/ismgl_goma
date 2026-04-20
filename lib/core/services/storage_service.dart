@@ -21,13 +21,14 @@ class StorageService {
   static const _tokenExpiryKey  = 'token_expiry';
 
   // Token
-  Future<void> saveToken(String token) => _prefs.setString(_tokenKey, token);
-  String? getToken() => _prefs.getString(_tokenKey);
+  Future<void> saveToken(String token) => _prefs.setString(_tokenKey, token.trim());
+  String? getToken() => _prefs.getString(_tokenKey)?.trim();
   Future<void> removeToken() => _prefs.remove(_tokenKey);
 
   // Refresh Token
-  Future<void> saveRefreshToken(String token) => _prefs.setString(_refreshTokenKey, token);
-  String? getRefreshToken() => _prefs.getString(_refreshTokenKey);
+  Future<void> saveRefreshToken(String token) =>
+      _prefs.setString(_refreshTokenKey, token.trim());
+  String? getRefreshToken() => _prefs.getString(_refreshTokenKey)?.trim();
 
   // Token Expiry
   Future<void> saveTokenExpiry(DateTime expiry) =>

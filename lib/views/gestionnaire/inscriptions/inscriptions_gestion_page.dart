@@ -143,7 +143,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
 
               // Filière
               DropdownButtonFormField<int>(
-                value: selectedFiliere,
+                initialValue: selectedFiliere,
                 decoration: const InputDecoration(labelText: 'Filière'),
                 items: _filieres.map<DropdownMenuItem<int>>((f) => DropdownMenuItem<int>(
                   value: f['id_filiere'] as int,
@@ -155,7 +155,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
 
               // Niveau
               DropdownButtonFormField<int>(
-                value: selectedNiveau,
+                initialValue: selectedNiveau,
                 decoration: const InputDecoration(labelText: 'Niveau'),
                 items: _niveaux.map<DropdownMenuItem<int>>((n) => DropdownMenuItem<int>(
                   value: n['id_niveau'] as int,
@@ -167,7 +167,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
 
               // Année
               DropdownButtonFormField<int>(
-                value: selectedAnnee,
+                initialValue: selectedAnnee,
                 decoration: const InputDecoration(labelText: 'Année Académique'),
                 items: _annees.map<DropdownMenuItem<int>>((a) => DropdownMenuItem<int>(
                   value: a['id_annee_academique'] as int,
@@ -179,7 +179,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
 
               // Type
               DropdownButtonFormField<String>(
-                value: typeInscription,
+                initialValue: typeInscription,
                 decoration: const InputDecoration(labelText: 'Type d\'inscription'),
                 items: ['Nouvelle', 'Réinscription', 'Transfert'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                 onChanged: (v) => setStateModal(() => typeInscription = v ?? 'Nouvelle'),

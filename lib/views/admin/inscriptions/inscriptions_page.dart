@@ -27,6 +27,8 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
   int    _total       = 0;
   String _search      = '';
   String? _filterStatut;
+  int? _busyInscriptionId;
+  String? _busyAction;
 
   final _searchCtrl = TextEditingController();
 
@@ -79,20 +81,32 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
   }
 
   Future<void> _valider(InscriptionModel ins) async {
+    if (_busyInscriptionId == ins.idInscription) return;
     final confirm = await AppHelpers.showConfirmDialog(
       title: 'Valider inscription', message: 'Valider l\'inscription de ${ins.nomComplet} ?',
       confirmText: 'Valider', confirmColor: AppTheme.success,
     );
     if (!confirm) return;
 
+    setState(() {
+      _busyInscriptionId = ins.idInscription;
+      _busyAction = 'valider';
+    });
     final result = await _api.patch('/inscriptions/${ins.idInscription}/valider');
     if (result['success'] == true) {
       AppHelpers.showSuccess('Inscription validée');
-      _load(reset: true);
+      await _load(reset: true);
+    }
+    if (mounted) {
+      setState(() {
+        _busyInscriptionId = null;
+        _busyAction = null;
+      });
     }
   }
 
   Future<void> _rejeter(InscriptionModel ins) async {
+    if (_busyInscriptionId == ins.idInscription) return;
     final motifCtrl = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
@@ -122,13 +136,23 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
     );
 
     if (confirm == true && motifCtrl.text.isNotEmpty) {
+      setState(() {
+        _busyInscriptionId = ins.idInscription;
+        _busyAction = 'rejeter';
+      });
       final result = await _api.patch(
         '/inscriptions/${ins.idInscription}/rejeter',
         data: {'motif': motifCtrl.text},
       );
       if (result['success'] == true) {
         AppHelpers.showSuccess('Inscription rejetée');
-        _load(reset: true);
+        await _load(reset: true);
+      }
+      if (mounted) {
+        setState(() {
+          _busyInscriptionId = null;
+          _busyAction = null;
+        });
       }
     }
   }
@@ -209,18 +233,22 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
                 Expanded(
                   child: Text(ins.nomComplet ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
+                const SizedBox(width: 8),
                 StatusChip(status: ins.statutInscription),
               ],
             ),
             const SizedBox(height: 6),
             Text(ins.numeroInscription ?? '', style: const TextStyle(color: AppTheme.primary, fontSize: 12, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 const Icon(Icons.school_outlined, size: 14, color: AppTheme.textSecondary),
-                const SizedBox(width: 4),
-                Text('${ins.nomFiliere ?? ''} - ${ins.nomNiveau ?? ''}',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                Text(
+                  '${ins.nomFiliere ?? ''} - ${ins.nomNiveau ?? ''}',
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -234,12 +262,13 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
             ),
             const SizedBox(height: 8),
             // Progression financière
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              alignment: WrapAlignment.spaceBetween,
               children: [
                 Text(AppHelpers.formatMontant(ins.montantPaye), style: const TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold)),
                 Text('/ ${AppHelpers.formatMontant(ins.montantTotal)}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                const Spacer(),
                 Text(ins.pourcentagePaye ?? '0%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ],
             ),
@@ -257,18 +286,30 @@ class _InscriptionsPageState extends State<InscriptionsPage> with SingleTickerPr
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _rejeter(ins),
-                      icon: const Icon(Icons.close, size: 16),
-                      label: const Text('Rejeter'),
+                      onPressed: _busyInscriptionId == ins.idInscription ? null : () => _rejeter(ins),
+                      icon: _busyInscriptionId == ins.idInscription && _busyAction == 'rejeter'
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.close, size: 16),
+                      label: Text(_busyInscriptionId == ins.idInscription && _busyAction == 'rejeter' ? '...' : 'Rejeter'),
                       style: OutlinedButton.styleFrom(foregroundColor: AppTheme.error, side: const BorderSide(color: AppTheme.error)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _valider(ins),
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Valider'),
+                      onPressed: _busyInscriptionId == ins.idInscription ? null : () => _valider(ins),
+                      icon: _busyInscriptionId == ins.idInscription && _busyAction == 'valider'
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.check, size: 16),
+                      label: Text(_busyInscriptionId == ins.idInscription && _busyAction == 'valider' ? '...' : 'Valider'),
                       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
                     ),
                   ),

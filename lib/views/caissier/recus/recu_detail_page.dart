@@ -35,9 +35,9 @@ class RecuDetailPage extends StatelessWidget {
               );
             }
             return IconButton(
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              tooltip: 'Générer PDF',
-              onPressed: () => ctrl.generatePDF(id),
+              icon: const Icon(Icons.download_outlined),
+              tooltip: 'Télécharger le reçu',
+              onPressed: () => ctrl.downloadRecu(id),
             );
           }),
         ],
@@ -155,14 +155,16 @@ class RecuDetailPage extends StatelessWidget {
                     children: [
                       const Icon(Icons.check_circle, color: AppTheme.success),
                       const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text('Reçu PDF disponible',
-                            style: TextStyle(color: AppTheme.success,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.open_in_new, color: AppTheme.success),
-                        onPressed: () {/* Open URL in browser */},
+                      Expanded(
+                        child: Text(
+                          'Dernier fichier : $url',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),

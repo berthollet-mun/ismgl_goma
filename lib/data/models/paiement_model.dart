@@ -54,17 +54,19 @@ class PaiementModel {
   });
 
   factory PaiementModel.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
+    String asString(dynamic v) => v?.toString() ?? '';
     return PaiementModel(
-      idPaiement:           json['id_paiement']          as int,
-      numeroPaiement:       json['numero_paiement']      as String,
-      idInscription:        json['id_inscription']       as int? ?? 0,
-      idEtudiant:           json['id_etudiant']          as int? ?? 0,
-      idTypeFrais:          json['id_type_frais']        as int? ?? 0,
-      idModePaiement:       json['id_mode_paiement']     as int? ?? 0,
+      idPaiement:           asInt(json['id_paiement']),
+      numeroPaiement:       asString(json['numero_paiement']),
+      idInscription:        asInt(json['id_inscription']),
+      idEtudiant:           asInt(json['id_etudiant']),
+      idTypeFrais:          asInt(json['id_type_frais']),
+      idModePaiement:       asInt(json['id_mode_paiement']),
       montant:              double.tryParse(json['montant']?.toString() ?? '0') ?? 0,
       datePaiement:         json['date_paiement']        as String?,
       referenceTransaction: json['reference_transaction'] as String?,
-      recuPar:              json['recu_par']             as int? ?? 0,
+      recuPar:              asInt(json['recu_par']),
       statutPaiement:       json['statut_paiement']      as String? ?? 'Validé',
       motifAnnulation:      json['motif_annulation']     as String?,
       annulePar:            json['annule_par']           as int?,

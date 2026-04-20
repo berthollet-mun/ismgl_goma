@@ -1,4 +1,5 @@
 /// Modèles de réponse pour les rapports financiers et statistiques.
+library;
 
 class RapportStatistiques {
   final int totalEtudiantsActifs;

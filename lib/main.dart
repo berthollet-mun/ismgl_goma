@@ -15,7 +15,12 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await AppInitialization.initialize();
   runApp(const MyApp());
-  FlutterNativeSplash.remove();
+  try {
+    FlutterNativeSplash.remove();
+  } catch (e) {
+    // Web can throw if splash assets were not generated yet.
+    print('⚠️ Splash remove ignored: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

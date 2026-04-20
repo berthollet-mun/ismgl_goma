@@ -259,7 +259,7 @@ class _NouveauPaiementPageState extends State<NouveauPaiementPage> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text('Restant:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                const Text('Restant:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                                 Text(
                                   AppHelpers.formatMontant(double.tryParse(_inscription!['montant_restant']?.toString() ?? '0') ?? 0),
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.error, fontSize: 14),

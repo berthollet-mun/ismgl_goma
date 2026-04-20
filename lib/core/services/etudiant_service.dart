@@ -1,11 +1,12 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/core/services/api_service.dart';
 
 class EtudiantService extends GetxService {
   final ApiService _api = Get.find<ApiService>();
 
-  /// Liste paginée des étudiants.
   Future<Map<String, dynamic>> getEtudiants({
     int page = 1,
     int pageSize = 20,
@@ -13,50 +14,53 @@ class EtudiantService extends GetxService {
     String? statut,
     String? sexe,
   }) async {
-    return _api.get('/etudiants', params: {
-      'page':      page,
-      'page_size': pageSize,
-      if (search != null && search.isNotEmpty) 'search': search,
-      if (statut != null) 'statut': statut,
-      if (sexe   != null) 'sexe':   sexe,
-    });
+    debugPrint('📚 EtudiantService.getEtudiants(page=$page, search=$search)');
+    return _api.get(
+      '/etudiants',
+      params: {
+        'page': page,
+        'page_size': pageSize,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (statut != null && statut.isNotEmpty) 'statut': statut,
+        if (sexe != null && sexe.isNotEmpty) 'sexe': sexe,
+      },
+    );
   }
 
-  /// Détail d'un étudiant.
-  Future<Map<String, dynamic>> getEtudiant(int id) async {
+  Future<Map<String, dynamic>> getEtudiant(int id) {
+    debugPrint('📚 EtudiantService.getEtudiant($id)');
     return _api.get('/etudiants/$id');
   }
 
-  /// Profil de l'étudiant connecté.
-  Future<Map<String, dynamic>> getMe() async {
+  Future<Map<String, dynamic>> getMe() {
+    debugPrint('📚 EtudiantService.getMe()');
     return _api.get('/etudiants/me');
   }
 
-  /// Créer un étudiant (multipart/form-data avec photo).
   Future<Map<String, dynamic>> createEtudiant(
     Map<String, dynamic> data, {
     String? photoProfilPath,
     String? photoIdentitePath,
   }) async {
-    if (photoProfilPath != null || photoIdentitePath != null) {
-      final files = <String, File>{};
-      if (photoProfilPath  != null) files['photo_profil']  = File(photoProfilPath);
-      if (photoIdentitePath != null) files['photo_identite'] = File(photoIdentitePath);
-      return _api.upload('/etudiants', data, files: files);
+    debugPrint('📚 EtudiantService.createEtudiant()');
+    if ((photoProfilPath == null || photoProfilPath.isEmpty) &&
+        (photoIdentitePath == null || photoIdentitePath.isEmpty)) {
+      return _api.post('/etudiants', data: data);
     }
-    return _api.post('/etudiants', data: data);
+
+    final files = <String, File>{};
+    if (photoProfilPath != null && photoProfilPath.isNotEmpty) {
+      files['photo_profil'] = File(photoProfilPath);
+    }
+    if (photoIdentitePath != null && photoIdentitePath.isNotEmpty) {
+      files['photo_identite'] = File(photoIdentitePath);
+    }
+
+    return _api.upload('/etudiants', data, files: files);
   }
 
-  /// Modifier un étudiant.
-  Future<Map<String, dynamic>> updateEtudiant(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    return _api.put('/etudiants/$id', data: data);
-  }
-
-  /// Modifier le statut d'un étudiant.
-  Future<Map<String, dynamic>> updateStatut(int id, String statut) async {
-    return _api.patch('/etudiants/$id/statut', data: {'statut': statut});
+  Future<Map<String, dynamic>> updateStatut(int idEtudiant, String statut) {
+    debugPrint('📚 EtudiantService.updateStatut($idEtudiant, $statut)');
+    return _api.patch('/etudiants/$idEtudiant/statut', data: {'statut': statut});
   }
 }

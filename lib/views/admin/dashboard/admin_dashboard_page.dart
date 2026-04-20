@@ -33,17 +33,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Future<void> _loadDashboard() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final result = await _api.get('/dashboard');
+      if (!mounted) return;
       if (result['success'] == true) {
         setState(() => _dashboardData = result['data']);
+      } else {
+        AppHelpers.showError(
+          result['message']?.toString() ?? 'Erreur chargement dashboard',
+        );
       }
     } catch (e) {
+      if (!mounted) return;
       AppHelpers.showError('Erreur chargement dashboard');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  double _asDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
   }
 
   @override
@@ -102,83 +117,102 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                AppHelpers.getInitials(_storage.userFullName),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 360;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bonjour, ${_storage.getUserPrenom()} !',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-                Text(
-                  _storage.userFullName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                child: Center(
                   child: Text(
-                    _storage.getUserRole() ?? '',
+                    AppHelpers.getInitials(_storage.userFullName),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${stats['paiements_aujourdhui'] ?? 0}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bonjour, ${_storage.getUserPrenom()} !',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      _storage.userFullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: compact ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _storage.getUserRole() ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Text(
-                'paiements\naujourd\'hui',
-                style: TextStyle(color: Colors.white70, fontSize: 11),
-                textAlign: TextAlign.right,
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${stats['paiements_aujourdhui'] ?? 0}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'paiements\naujourd\'hui',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: compact ? 10 : 11,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -198,23 +232,30 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Icons.warning_amber_rounded, AppTheme.error),
     ];
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.4,
-      ),
-      itemCount: items.length,
-      itemBuilder: (_, i) => _buildStatCard(items[i]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
+        final cardAspectRatio = width < 360 ? 1.15 : 1.28;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: cardAspectRatio,
+          ),
+          itemCount: items.length,
+          itemBuilder: (_, i) => _buildStatCard(items[i]),
+        );
+      },
     );
   }
 
   Widget _buildStatCard(_StatItem item) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -238,25 +279,36 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
             child: Icon(item.icon, color: item.color, size: 22),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: item.color,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    item.value,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: item.color,
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                item.label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
+                const SizedBox(height: 2),
+                Text(
+                  item.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    height: 1.1,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -276,31 +328,35 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            _ActionButton('Étudiants', Icons.people_rounded, AppTheme.primary,
-                () => Get.toNamed(AppRoutes.adminEtudiants)),
-            const SizedBox(width: 8),
-            _ActionButton('Inscriptions', Icons.how_to_reg_rounded, AppTheme.success,
-                () => Get.toNamed(AppRoutes.adminInscriptions)),
-            const SizedBox(width: 8),
-            _ActionButton('Rapports', Icons.bar_chart_rounded, AppTheme.warning,
-                () => Get.toNamed(AppRoutes.adminRapports)),
-            const SizedBox(width: 8),
-            _ActionButton('Config', Icons.settings_rounded, AppTheme.info,
-                () => Get.toNamed(AppRoutes.adminConfiguration)),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _ActionButton('Étudiants', Icons.people_rounded, AppTheme.primary,
+                  () => Get.toNamed(AppRoutes.adminEtudiants)),
+              const SizedBox(width: 8),
+              _ActionButton('Inscriptions', Icons.how_to_reg_rounded, AppTheme.success,
+                  () => Get.toNamed(AppRoutes.adminInscriptions)),
+              const SizedBox(width: 8),
+              _ActionButton('Rapports', Icons.bar_chart_rounded, AppTheme.warning,
+                  () => Get.toNamed(AppRoutes.adminRapports)),
+              const SizedBox(width: 8),
+              _ActionButton('Config', Icons.settings_rounded, AppTheme.info,
+                  () => Get.toNamed(AppRoutes.adminConfiguration)),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _ActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
-    return Expanded(
+    return SizedBox(
+      width: 88,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
@@ -311,6 +367,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               const SizedBox(height: 4),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 10,
                   color: color,
@@ -327,9 +385,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildChartSection() {
     final stats = _dashboardData?['statistiques'] ?? {};
-    final attendu  = (stats['montant_total_attendu'] ?? 0).toDouble();
-    final percu    = (stats['montant_total_percu']   ?? 0).toDouble();
-    final impaye   = (stats['montant_total_impaye']  ?? 0).toDouble();
+    final percu = _asDouble(stats['montant_total_percu']);
+    final impaye = _asDouble(stats['montant_total_impaye']);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -383,10 +440,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _LegendItem('Perçu', AppHelpers.formatMontant(percu), AppTheme.success),
-              _LegendItem('Impayé', AppHelpers.formatMontant(impaye), AppTheme.error),
+              Expanded(
+                child: _LegendItem(
+                  'Perçu',
+                  AppHelpers.formatMontant(percu),
+                  AppTheme.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _LegendItem(
+                  'Impayé',
+                  AppHelpers.formatMontant(impaye),
+                  AppTheme.error,
+                ),
+              ),
             ],
           ),
         ],
@@ -396,16 +466,36 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _LegendItem(String label, String value, Color color) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
             const SizedBox(width: 6),
-            Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
+          ),
+        ),
       ],
     );
   }
@@ -464,10 +554,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 Text(
                   p['nom_complet_etudiant'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 Text(
                   p['nom_frais'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
               ],
@@ -480,6 +574,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 AppHelpers.formatMontant(
                   double.tryParse(p['montant']?.toString() ?? '0') ?? 0,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.success,
@@ -500,6 +596,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
+      type: BottomNavigationBarType.fixed,
+      selectedFontSize: 11,
+      unselectedFontSize: 10,
       onTap: (i) {
         setState(() => _selectedIndex = i);
         switch (i) {

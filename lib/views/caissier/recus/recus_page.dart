@@ -1,11 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/core/services/api_service.dart';
+import 'package:ismgl/core/utils/download_share_helper.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/views/shared/widgets/button.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
-import 'package:ismgl/views/shared/widgets/empty_state.dart%20&%20error_widget.dart';
+import 'package:ismgl/views/shared/widgets/empty_state.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 
 class RecusPage extends StatefulWidget {
@@ -59,15 +62,38 @@ class _RecusPageState extends State<RecusPage> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _genererRecu(int idRecu) async {
-    setState(() => _isGenerating = true);
-    final result = await _api.get('/recus/$idRecu/generate');
-    setState(() => _isGenerating = false);
+  String _extensionRecu(Uint8List bytes) {
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46) {
+      return 'pdf';
+    }
+    return 'html';
+  }
 
-    if (result['success'] == true) {
-      AppHelpers.showSuccess('Reçu généré: ${result['data']['numero_recu']}');
-    } else {
-      AppHelpers.showError('Erreur génération reçu');
+  Future<void> _genererRecu(dynamic idRecuRaw) async {
+    final id = idRecuRaw is int ? idRecuRaw : int.tryParse('$idRecuRaw');
+    if (id == null) return;
+
+    setState(() => _isGenerating = true);
+    try {
+      debugPrint('🧾 Téléchargement reçu caissier id=$id');
+      final bytes = await _api.fetchBytes('/recus/$id/download');
+      if (bytes == null || bytes.isEmpty) {
+        AppHelpers.showError('Impossible de télécharger le reçu');
+        return;
+      }
+      final name = 'recu_$id.${_extensionRecu(bytes)}';
+      final ok = await DownloadShareHelper.shareBytes(bytes, name);
+      if (ok) {
+        AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
+      } else {
+        AppHelpers.showError('Partage du reçu impossible');
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
     }
   }
 
@@ -161,10 +187,10 @@ class _RecusPageState extends State<RecusPage> {
 
           // Bouton générer
           AppButton(
-            label:     'Générer / Imprimer le Reçu',
+            label:     'Télécharger le reçu',
             onPressed: _isGenerating ? null : () => _genererRecu(r['id_recu']),
             isLoading: _isGenerating,
-            icon:      Icons.print_rounded,
+            icon:      Icons.download_outlined,
           ),
         ],
       ),

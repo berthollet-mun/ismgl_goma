@@ -17,16 +17,42 @@ class NotificationController extends GetxController {
     loadUnreadCount();
   }
 
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
   Future<void> loadNotifications() async {
     isLoading.value = true;
     try {
       final result = await _service.getNotifications();
       if (result['success'] == true) {
-        final data = result['data'] as Map<String, dynamic>;
-        notifications.value = (data['notifications'] as List<dynamic>)
-            .map((n) => NotificationModel.fromJson(n as Map<String, dynamic>))
+        final raw = result['data'];
+        List<dynamic> list = [];
+        var unread = 0;
+
+        if (raw is List) {
+          list = raw;
+        } else if (raw is Map<String, dynamic>) {
+          list = (raw['notifications'] as List<dynamic>?) ?? [];
+          unread = _asInt(
+            raw['total_non_lues'] ?? raw['non_lues'] ?? raw['count_non_lues'],
+          );
+        }
+
+        notifications.value = list
+            .map((n) => NotificationModel.fromJson(
+                  Map<String, dynamic>.from(n as Map),
+                ))
             .toList();
-        unreadCount.value = data['total_non_lues'] as int? ?? 0;
+
+        if (unread == 0 && notifications.isNotEmpty) {
+          unread = notifications
+              .where((n) => !n.estLu)
+              .length;
+        }
+        unreadCount.value = unread;
       }
     } catch (e) {
       AppHelpers.showError('Erreur chargement notifications');
@@ -39,7 +65,14 @@ class NotificationController extends GetxController {
     try {
       final result = await _service.getCount();
       if (result['success'] == true) {
-        unreadCount.value = result['data']['count'] as int? ?? 0;
+        final d = result['data'];
+        if (d is Map<String, dynamic>) {
+          unreadCount.value = _asInt(
+            d['count'] ?? d['non_lues'] ?? d['total_non_lues'],
+          );
+        } else if (d is int) {
+          unreadCount.value = d;
+        }
       }
     } catch (_) {}
   }

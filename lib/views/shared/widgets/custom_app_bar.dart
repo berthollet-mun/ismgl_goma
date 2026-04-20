@@ -25,7 +25,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final notifController = Get.find<NotificationController>();
 
     return AppBar(
-      title: Text(title),
+      titleSpacing: showBack ? 0 : 16,
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       leading: showBack
           ? IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -53,7 +62,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      '${notifController.unreadCount.value}',
+                      notifController.unreadCount.value > 99
+                          ? '99+'
+                          : '${notifController.unreadCount.value}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
