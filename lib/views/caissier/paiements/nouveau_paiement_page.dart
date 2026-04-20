@@ -165,7 +165,16 @@ class _NouveauPaiementPageState extends State<NouveauPaiementPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nouveau Paiement'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new), onPressed: Get.back),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.back();
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -281,7 +290,11 @@ class _NouveauPaiementPageState extends State<NouveauPaiementPage> {
                 value: _selectedTypeFrais,
                 items: _typesFrais.map((t) => DropdownMenuItem<int>(
                   value: t['id_type_frais'] as int,
-                  child: Text('${t['nom_frais']} (${AppHelpers.formatMontant(double.tryParse(t['montant_base']?.toString() ?? '0') ?? 0)})'),
+                  child: Text(
+                    '${t['nom_frais']} (${AppHelpers.formatMontant(double.tryParse(t['montant_base']?.toString() ?? '0') ?? 0)})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 )).toList(),
                 onChanged: (v) {
                   setState(() => _selectedTypeFrais = v);
@@ -310,7 +323,11 @@ class _NouveauPaiementPageState extends State<NouveauPaiementPage> {
                 value: _selectedMode,
                 items: _modesPaiement.map((m) => DropdownMenuItem<int>(
                   value: m['id_mode_paiement'] as int,
-                  child: Text(m['nom_mode'] ?? ''),
+                  child: Text(
+                    m['nom_mode'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 )).toList(),
                 onChanged: (v) => setState(() => _selectedMode = v),
               ),

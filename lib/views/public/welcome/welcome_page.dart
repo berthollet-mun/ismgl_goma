@@ -41,6 +41,7 @@ class WelcomePage extends StatelessWidget {
                   label: 'Se connecter',
                   onPressed: () => Get.toNamed(AppRoutes.login),
                   icon: Icons.login_rounded,
+                  outlined: true,
                   color: Colors.white,
                 ),
                 const SizedBox(height: 24),

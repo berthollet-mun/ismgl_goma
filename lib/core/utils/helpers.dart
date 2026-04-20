@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ismgl/app/app_messenger.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 
 class AppHelpers {
@@ -11,27 +13,91 @@ class AppHelpers {
     Icon? icon,
     int seconds = 3,
   }) {
-    void fallbackScaffold() {
+    void deliver() {
+      final rootMessenger = rootScaffoldMessengerKey.currentState;
+      final rootCtx = rootScaffoldMessengerKey.currentContext;
+      if (rootMessenger != null && rootCtx != null) {
+        final mq = MediaQuery.of(rootCtx);
+        const barEstimate = 96.0;
+        final topInset = mq.padding.top + 8;
+        rootMessenger.clearSnackBars();
+        rootMessenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                if (icon != null) ...[icon, const SizedBox(width: 8)],
+                Expanded(
+                  child: Text(
+                    '$title\n$message',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: backgroundColor,
+            duration: Duration(seconds: seconds),
+            margin: EdgeInsets.only(
+              left: 12,
+              right: 12,
+              bottom: (mq.size.height - topInset - barEstimate)
+                  .clamp(8.0, mq.size.height),
+            ),
+          ),
+        );
+        return;
+      }
+
+      try {
+        final overlayCtx = Get.overlayContext ?? Get.context;
+        if (overlayCtx != null) {
+          final mq = MediaQuery.of(overlayCtx);
+          Get.snackbar(
+            title,
+            message,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: backgroundColor,
+            colorText: Colors.white,
+            icon: icon,
+            shouldIconPulse: false,
+            margin: EdgeInsets.only(
+              top: mq.padding.top + 8,
+              left: 12,
+              right: 12,
+            ),
+            borderRadius: 10,
+            duration: Duration(seconds: seconds),
+            snackStyle: SnackStyle.FLOATING,
+            maxWidth: mq.size.width - 24,
+          );
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Get.snackbar: $e');
+      }
+
       final ctx = Get.context;
       if (ctx == null) {
-        debugPrint('⚠️ Snackbar ignorée (contexte indisponible): $title');
+        debugPrint('⚠️ Snackbar ignorée: $title — $message');
         return;
       }
       final messenger = ScaffoldMessenger.maybeOf(ctx);
-      if (messenger == null) {
-        debugPrint('⚠️ Snackbar ignorée (ScaffoldMessenger indisponible): $title');
-        return;
-      }
+      if (messenger == null) return;
       final mq = MediaQuery.of(ctx);
       const barHeight = 88.0;
       final top = mq.padding.top + 8;
-      messenger.hideCurrentSnackBar();
+      messenger.clearSnackBars();
       messenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [
               if (icon != null) ...[icon, const SizedBox(width: 8)],
-              Expanded(child: Text('$title\n$message')),
+              Expanded(
+                child: Text(
+                  '$title\n$message',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
             ],
           ),
           behavior: SnackBarBehavior.floating,
@@ -46,34 +112,12 @@ class AppHelpers {
       );
     }
 
-    try {
-      final overlayCtx = Get.overlayContext ?? Get.context;
-      if (overlayCtx != null) {
-        final mq = MediaQuery.of(overlayCtx);
-        Get.snackbar(
-          title,
-          message,
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: backgroundColor,
-          colorText: Colors.white,
-          icon: icon,
-          shouldIconPulse: false,
-          margin: EdgeInsets.only(
-            top: mq.padding.top + 8,
-            left: 12,
-            right: 12,
-          ),
-          borderRadius: 10,
-          duration: Duration(seconds: seconds),
-          snackStyle: SnackStyle.FLOATING,
-          maxWidth: mq.size.width - 24,
-        );
-        return;
-      }
-    } catch (e) {
-      debugPrint('⚠️ Get.snackbar indisponible, fallback Scaffold: $e');
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => deliver());
+    } else {
+      deliver();
     }
-    fallbackScaffold();
   }
 
   // Formater montant
@@ -125,6 +169,7 @@ class AppHelpers {
       title: '⚠️ Attention',
       message: message,
       backgroundColor: AppTheme.warning,
+      icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
     );
   }
 
@@ -133,6 +178,7 @@ class AppHelpers {
       title: 'ℹ️ Information',
       message: message,
       backgroundColor: AppTheme.info,
+      icon: const Icon(Icons.info_outline_rounded, color: Colors.white),
     );
   }
 

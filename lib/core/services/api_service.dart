@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 import 'package:ismgl/app/routes/app_routes.dart';
 import 'package:ismgl/core/services/storage_service.dart';
 
@@ -22,6 +22,8 @@ class ApiService {
         sendTimeout: const Duration(seconds: 30),
         contentType: 'application/json',
         responseType: ResponseType.json,
+        // Ne pas lever d’exception sur 4xx/5xx : normaliser en Map côté client.
+        validateStatus: (status) => status != null && status < 600,
       ),
     );
     debugPrint('🌐 ApiService.baseUrl=${_dio.options.baseUrl}');
@@ -200,6 +202,37 @@ class ApiService {
     return false;
   }
 
+  Map<String, dynamic> _fromHttpResponse(Response<dynamic> response) {
+    final code = response.statusCode ?? 0;
+    if (code >= 400) {
+      final data = response.data;
+      if (data is Map) {
+        final m = Map<String, dynamic>.from(data);
+        m['success'] = m['success'] ?? false;
+        m['status_code'] = m['status_code'] ?? code;
+        m['message'] = m['message']?.toString() ?? 'Erreur serveur ($code)';
+        return m;
+      }
+      if (data is String && data.isNotEmpty) {
+        final short =
+            data.length > 220 ? '${data.substring(0, 220)}…' : data;
+        return {
+          'success': false,
+          'message': short,
+          'status_code': code,
+          'data': null,
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Erreur serveur ($code)',
+        'status_code': code,
+        'data': null,
+      };
+    }
+    return _normalizeBody(response.data, code);
+  }
+
   // GET
   Future<Map<String, dynamic>> get(String endpoint,
       {Map<String, dynamic>? params}) async {
@@ -207,7 +240,7 @@ class ApiService {
       debugPrint('\n🔵 GET: $endpoint');
       debugPrint('   Params: $params');
       final response = await _dio.get(endpoint, queryParameters: params);
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);
@@ -220,7 +253,7 @@ class ApiService {
       debugPrint('\n🔵 POST: $endpoint');
       debugPrint('   Data: $data');
       final response = await _dio.post(endpoint, data: data);
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);
@@ -233,7 +266,7 @@ class ApiService {
       debugPrint('\n🔵 PUT: $endpoint');
       debugPrint('   Data: $data');
       final response = await _dio.put(endpoint, data: data);
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);
@@ -246,7 +279,7 @@ class ApiService {
       debugPrint('\n🔵 PATCH: $endpoint');
       debugPrint('   Data: $data');
       final response = await _dio.patch(endpoint, data: data);
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);
@@ -258,7 +291,7 @@ class ApiService {
     try {
       debugPrint('\n🔵 DELETE: $endpoint');
       final response = await _dio.delete(endpoint);
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);
@@ -293,7 +326,7 @@ class ApiService {
           ? await _dio.post(endpoint, data: formData)
           : await _dio.put(endpoint, data: formData);
 
-      return _normalizeBody(response.data, response.statusCode);
+      return _fromHttpResponse(response);
     } on DioException catch (e) {
       debugPrint('   ❌ Error: ${e.message}');
       return _handleError(e);

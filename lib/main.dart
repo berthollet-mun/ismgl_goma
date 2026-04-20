@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'package:ismgl/app/app_messenger.dart';
 import 'package:ismgl/app/initialization.dart';
 import 'package:ismgl/app/routes/app_pages.dart';
 import 'package:ismgl/app/routes/app_routes.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
     return Obx(
       () => GetMaterialApp(
         title: 'ISMGL',
+        scaffoldMessengerKey: rootScaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         themeMode: themeController.currentTheme.value,
         theme: AppTheme.lightTheme,

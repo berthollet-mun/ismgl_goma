@@ -108,8 +108,9 @@ class AppDropdown<T> extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
-          initialValue:     value,
-          items:     items,
+          initialValue: value,
+          isExpanded: true,
+          items: items,
           onChanged: onChanged,
           decoration: InputDecoration(errorText: errorText),
           style: GoogleFonts.poppins(

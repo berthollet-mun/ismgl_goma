@@ -44,6 +44,13 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
     super.dispose();
   }
 
+  /// Hauteur max du corps scrollable des dialogues (clavier inclus).
+  double _dialogBodyHeight(BuildContext ctx) {
+    final mq = MediaQuery.of(ctx);
+    final h = mq.size.height - mq.viewInsets.bottom - 220;
+    return h.clamp(120.0, 400.0);
+  }
+
   Future<void> _loadAll() async {
     setState(() => _isLoading = true);
     final results = await Future.wait([
@@ -244,6 +251,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         title: const Text('Nouvelle Année Académique'),
         content: SizedBox(
           width: double.maxFinite,
+          height: _dialogBodyHeight(ctx),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -381,6 +389,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           title: const Text('Nouveau Type de Frais'),
           content: SizedBox(
             width: double.maxFinite,
+            height: _dialogBodyHeight(ctx),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -495,6 +504,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           title: const Text('Nouvelle Filière'),
           content: SizedBox(
             width: double.maxFinite,
+            height: _dialogBodyHeight(ctx),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -603,6 +613,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         title: const Text('Nouvelle Faculté'),
         content: SizedBox(
           width: double.maxFinite,
+          height: _dialogBodyHeight(ctx),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

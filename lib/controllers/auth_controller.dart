@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/app/routes/app_routes.dart';
 import 'package:ismgl/core/services/auth_service.dart';
@@ -75,10 +76,48 @@ class AuthController extends GetxController {
 
   // ── Déconnexion ────────────────────────────────────────────────────────────
   Future<void> logout() async {
+    if (isLoading.value) return;
     isLoading.value = true;
-    await _authService.logout();
-    isLoading.value = false;
-    Get.offAllNamed(AppRoutes.login);
+    Get.dialog(
+      PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Déconnexion…',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      await _authService.logout();
+    } finally {
+      try {
+        if (Get.isDialogOpen == true) Get.back<void>();
+      } catch (_) {}
+      isLoading.value = false;
+      Get.offAllNamed(AppRoutes.login);
+    }
   }
 
   // ── Changer mot de passe ───────────────────────────────────────────────────
