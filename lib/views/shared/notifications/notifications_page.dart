@@ -20,10 +20,22 @@ class NotificationsPage extends StatelessWidget {
         title: 'Notifications',
         showNotification: false,
         actions: [
-          TextButton(
-            onPressed: controller.marquerToutLu,
-            child: const Text('Tout lire', style: TextStyle(color: AppTheme.primary)),
-          ),
+          Obx(() => TextButton(
+                onPressed: (controller.isMarkingAllRead.value ||
+                        controller.unreadCount.value <= 0)
+                    ? null
+                    : controller.marquerToutLu,
+                child: controller.isMarkingAllRead.value
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Tout lire',
+                        style: TextStyle(color: AppTheme.primary),
+                      ),
+              )),
         ],
       ),
       body: Obx(() {

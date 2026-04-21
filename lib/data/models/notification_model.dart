@@ -28,20 +28,26 @@ class NotificationModel {
   }
 
   static String _asString(dynamic v) => v?.toString() ?? '';
+  static bool _asBool(dynamic v) {
+    if (v is bool) return v;
+    if (v is num) return v == 1;
+    final s = v?.toString().trim().toLowerCase();
+    return s == '1' || s == 'true' || s == 'oui' || s == 'yes';
+  }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       idNotification:   _asInt(json['id_notification'] ?? json['id']),
       idUser:           _asInt(json['id_user']),
-      titre:            _asString(json['titre']),
-      message:          _asString(json['message']),
-      typeNotification: _asString(json['type_notification']).isEmpty
+      titre:            _asString(json['titre'] ?? json['title'] ?? json['subject']),
+      message:          _asString(json['message'] ?? json['contenu'] ?? json['body']),
+      typeNotification: _asString(json['type_notification'] ?? json['type']).isEmpty
           ? 'Info'
-          : _asString(json['type_notification']),
-      estLu:            json['est_lu'] == true || json['est_lu'] == 1,
-      dateLecture:      json['date_lecture'] as String?,
+          : _asString(json['type_notification'] ?? json['type']),
+      estLu:            _asBool(json['est_lu'] ?? json['is_read'] ?? json['lu']),
+      dateLecture:      (json['date_lecture'] ?? json['read_at'])?.toString(),
       lien:             json['lien'] as String?,
-      dateCreation:     json['date_creation'] as String?,
+      dateCreation:     (json['date_creation'] ?? json['created_at'])?.toString(),
     );
   }
 

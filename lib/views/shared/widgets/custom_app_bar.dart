@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/app/routes/app_routes.dart';
-import 'package:ismgl/app/themes/app_theme.dart';
-import 'package:ismgl/controllers/notification_controller.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String  title;
@@ -22,8 +20,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifController = Get.find<NotificationController>();
-
     return AppBar(
       titleSpacing: showBack ? 0 : 16,
       title: FittedBox(
@@ -43,38 +39,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       automaticallyImplyLeading: showBack,
       actions: [
-        if (showNotification)
-          Obx(() => Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => Get.toNamed(AppRoutes.notifications),
-              ),
-              if (notifController.unreadCount.value > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppTheme.error,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      notifController.unreadCount.value > 99
-                          ? '99+'
-                          : '${notifController.unreadCount.value}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          )),
         if (showProfile)
           IconButton(
             icon: const Icon(Icons.person_outline_rounded),

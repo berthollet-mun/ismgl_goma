@@ -133,9 +133,12 @@ class _PaiementsPageState extends State<PaiementsPage> {
             ? null
             : () async {
                 setState(() => _isCreating = true);
-                await Get.toNamed(AppRoutes.caissierNouveauPaiement);
-                await _load(reset: true);
-                if (mounted) setState(() => _isCreating = false);
+                try {
+                  await Get.toNamed(AppRoutes.caissierNouveauPaiement);
+                  await _load(reset: true);
+                } finally {
+                  if (mounted) setState(() => _isCreating = false);
+                }
               },
         label: _isCreating
             ? const SizedBox(
@@ -146,6 +149,7 @@ class _PaiementsPageState extends State<PaiementsPage> {
             : const Text('Nouveau'),
         icon: _isCreating ? null : const Icon(Icons.add),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [

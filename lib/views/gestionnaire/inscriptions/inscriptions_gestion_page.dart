@@ -34,6 +34,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
   List<dynamic> _filieres        = [];
   List<dynamic> _niveaux         = [];
   List<dynamic> _annees          = [];
+  List<dynamic> _etudiants       = [];
   Map<String, dynamic>? _etudiantToInscribe;
 
   @override
@@ -65,14 +66,21 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
 
   Future<void> _loadConfig() async {
     final results = await Future.wait([
+      _api.get('/etudiants', params: {'page': 1, 'page_size': 200}),
       _api.get('/filieres'),
       _api.get('/config/niveaux'),
       _api.get('/config/annees'),
     ]);
     setState(() {
-      _filieres = (results[0]['data'] as List?) ?? [];
-      _niveaux  = (results[1]['data'] as List?) ?? [];
-      _annees   = (results[2]['data'] as List?) ?? [];
+      final etudiantsPayload = results[0]['data'];
+      if (etudiantsPayload is Map<String, dynamic>) {
+        _etudiants = (etudiantsPayload['items'] as List?) ?? [];
+      } else {
+        _etudiants = (etudiantsPayload as List?) ?? [];
+      }
+      _filieres = (results[1]['data'] as List?) ?? [];
+      _niveaux  = (results[2]['data'] as List?) ?? [];
+      _annees   = (results[3]['data'] as List?) ?? [];
     });
   }
 
@@ -110,6 +118,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
   }
 
   void _showInscriptionForm() {
+    int? selectedEtudiant = _etudiantToInscribe?['id_etudiant'] as int?;
     int? selectedFiliere;
     int? selectedNiveau;
     int? selectedAnnee;
@@ -140,6 +149,23 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 16),
+
+              if (_etudiantToInscribe == null) ...[
+                DropdownButtonFormField<int>(
+                  initialValue: selectedEtudiant,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Étudiant'),
+                  items: _etudiants.map<DropdownMenuItem<int>>((e) => DropdownMenuItem<int>(
+                    value: e['id_etudiant'] as int,
+                    child: Text(
+                      '${e['prenom'] ?? ''} ${e['nom'] ?? ''}'.trim(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )).toList(),
+                  onChanged: (v) => setStateModal(() => selectedEtudiant = v),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // Filière
               DropdownButtonFormField<int>(
@@ -190,13 +216,14 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    if (selectedFiliere == null || selectedNiveau == null || selectedAnnee == null || _etudiantToInscribe == null) {
+                    final etudiantId = _etudiantToInscribe?['id_etudiant'] ?? selectedEtudiant;
+                    if (selectedFiliere == null || selectedNiveau == null || selectedAnnee == null || etudiantId == null) {
                       AppHelpers.showError('Veuillez remplir tous les champs');
                       return;
                     }
                     Get.back();
                     final result = await _api.post('/inscriptions', data: {
-                      'id_etudiant':        _etudiantToInscribe!['id_etudiant'],
+                      'id_etudiant':        etudiantId,
                       'id_filiere':         selectedFiliere,
                       'id_niveau':          selectedNiveau,
                       'id_annee_academique': selectedAnnee,
@@ -236,6 +263,7 @@ class _InscriptionsGestionPageState extends State<InscriptionsGestionPage> {
         label: const Text('Nouvelle inscription'),
         icon: const Icon(Icons.add),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [

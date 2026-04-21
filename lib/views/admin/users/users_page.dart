@@ -161,7 +161,7 @@ class _UsersPageState extends State<UsersPage> {
         AppHelpers.showSuccess('Utilisateur supprimé');
         await _load(reset: true);
       } else {
-        AppHelpers.showError(result['message'] ?? 'Erreur');
+        AppHelpers.showError(_friendlyDeleteError(result['message']));
       }
       if (mounted) {
         setState(() {
@@ -170,6 +170,18 @@ class _UsersPageState extends State<UsersPage> {
         });
       }
     }
+  }
+
+  String _friendlyDeleteError(dynamic rawMessage) {
+    final msg = (rawMessage ?? '').toString();
+    final lower = msg.toLowerCase();
+    if (lower.contains('foreign key') ||
+        lower.contains('cannot delete or update a parent row') ||
+        lower.contains('inscriptions_ibfk')) {
+      return 'Suppression impossible: cet utilisateur est lie a des donnees (inscriptions/paiements). '
+          'Desactivez le compte ou supprimez d abord les enregistrements dependants.';
+    }
+    return msg.isEmpty ? 'Erreur lors de la suppression' : msg;
   }
 
   @override
@@ -192,9 +204,12 @@ class _UsersPageState extends State<UsersPage> {
             ? null
             : () async {
                 setState(() => _isCreating = true);
-                await Get.toNamed(AppRoutes.adminUserForm);
-                await _load(reset: true);
-                if (mounted) setState(() => _isCreating = false);
+                try {
+                  await Get.toNamed(AppRoutes.adminUserForm);
+                  await _load(reset: true);
+                } finally {
+                  if (mounted) setState(() => _isCreating = false);
+                }
               },
         label: _isCreating
             ? const SizedBox(
@@ -205,6 +220,7 @@ class _UsersPageState extends State<UsersPage> {
             : const Text('Nouvel utilisateur'),
         icon: _isCreating ? null : const Icon(Icons.person_add_rounded),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [

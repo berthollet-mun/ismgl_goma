@@ -69,10 +69,14 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
         onPressed: _isCreating
             ? null
             : () async {
+                if (!mounted) return;
                 setState(() => _isCreating = true);
-                await Get.toNamed(AppRoutes.gestionEtudiantForm);
-                await _load();
-                if (mounted) setState(() => _isCreating = false);
+                try {
+                  await Get.toNamed(AppRoutes.gestionEtudiantForm);
+                  await _load();
+                } finally {
+                  if (mounted) setState(() => _isCreating = false);
+                }
               },
         label: _isCreating
             ? const SizedBox(
@@ -83,6 +87,7 @@ class _GestionDashboardPageState extends State<GestionDashboardPage> {
             : const Text('Nouvel Étudiant'),
         icon: _isCreating ? null : const Icon(Icons.person_add_rounded),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }

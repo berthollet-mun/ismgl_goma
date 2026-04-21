@@ -12,7 +12,9 @@ class EtudiantFormPage extends StatefulWidget {
 
 class _EtudiantFormPageState extends State<EtudiantFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final _ctrl    = Get.find<EtudiantController>();
+  final _ctrl = Get.isRegistered<EtudiantController>()
+      ? Get.find<EtudiantController>()
+      : Get.put(EtudiantController(), permanent: true);
 
   final _nom       = TextEditingController();
   final _prenom    = TextEditingController();

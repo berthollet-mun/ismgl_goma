@@ -154,6 +154,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle année'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     if (idx == 1) {
@@ -162,6 +163,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Nouveau frais'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     if (idx == 2) {
@@ -170,6 +172,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle filière'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     if (idx == 3) {
@@ -178,6 +181,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle faculté'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     if (idx == 4) {
@@ -186,6 +190,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Nouveau dept.'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     if (idx == 6) {
@@ -194,6 +199,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
         icon: const Icon(Icons.add),
         label: const Text('Ajouter un frais'),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       );
     }
     return null;

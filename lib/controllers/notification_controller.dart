@@ -9,6 +9,8 @@ class NotificationController extends GetxController {
   final notifications  = <NotificationModel>[].obs;
   final unreadCount    = 0.obs;
   final isLoading      = false.obs;
+  final isMarkingAllRead = false.obs;
+  DateTime? _lastMarkAllReadAt;
 
   @override
   void onInit() {
@@ -24,29 +26,34 @@ class NotificationController extends GetxController {
   }
 
   List<dynamic> _extractNotifications(dynamic resultData, Map<String, dynamic> fullResult) {
-    if (resultData is List) return resultData;
+    List<dynamic> scan(dynamic node) {
+      if (node is List) return node;
+      if (node is! Map) return <dynamic>[];
 
-    Map<String, dynamic>? mapData;
-    if (resultData is Map<String, dynamic>) {
-      mapData = resultData;
-    } else if (fullResult['data'] is Map<String, dynamic>) {
-      mapData = fullResult['data'] as Map<String, dynamic>;
-    } else {
-      mapData = fullResult;
+      final current = Map<String, dynamic>.from(node);
+      final direct = <dynamic>[
+        current['notifications'],
+        current['items'],
+        current['results'],
+        current['rows'],
+        current['data'],
+      ];
+
+      for (final candidate in direct) {
+        if (candidate is List) return candidate;
+      }
+      for (final candidate in direct) {
+        if (candidate is Map) {
+          final nested = scan(candidate);
+          if (nested.isNotEmpty) return nested;
+        }
+      }
+      return <dynamic>[];
     }
 
-    final possibleLists = <dynamic>[
-      mapData['notifications'],
-      mapData['items'],
-      mapData['results'],
-      mapData['rows'],
-      mapData['data'],
-    ];
-
-    for (final candidate in possibleLists) {
-      if (candidate is List) return candidate;
-    }
-    return <dynamic>[];
+    final fromData = scan(resultData);
+    if (fromData.isNotEmpty) return fromData;
+    return scan(fullResult);
   }
 
   int _extractUnreadCount(Map<String, dynamic> source) {
@@ -75,8 +82,9 @@ class NotificationController extends GetxController {
         }
 
         notifications.value = list
+            .whereType<Map>()
             .map((n) => NotificationModel.fromJson(
-                  Map<String, dynamic>.from(n as Map),
+                  Map<String, dynamic>.from(n),
                 ))
             .toList();
 
@@ -116,9 +124,26 @@ class NotificationController extends GetxController {
   }
 
   Future<void> marquerToutLu() async {
-    await _service.markAllAsRead();
-    notifications.refresh();
-    unreadCount.value = 0;
+    if (isMarkingAllRead.value) return;
+    if (unreadCount.value <= 0) return;
+
+    final now = DateTime.now();
+    if (_lastMarkAllReadAt != null &&
+        now.difference(_lastMarkAllReadAt!).inMilliseconds < 1200) {
+      return;
+    }
+
+    isMarkingAllRead.value = true;
+    _lastMarkAllReadAt = now;
+    try {
+      await _service.markAllAsRead();
+      unreadCount.value = 0;
+      await loadNotifications();
+    } catch (_) {
+      AppHelpers.showError('Impossible de marquer toutes les notifications');
+    } finally {
+      isMarkingAllRead.value = false;
+    }
   }
 
   Future<void> supprimer(int id) async {

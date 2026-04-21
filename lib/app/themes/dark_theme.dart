@@ -70,5 +70,14 @@ class DarkTheme {
       type: BottomNavigationBarType.fixed,
       elevation: 8,
     ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: AppTheme.secondary,
+      foregroundColor: Colors.white,
+      extendedTextStyle: GoogleFonts.poppins(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
   );
 }

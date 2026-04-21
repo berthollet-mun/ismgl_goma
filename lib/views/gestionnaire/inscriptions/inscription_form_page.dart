@@ -15,9 +15,15 @@ class InscriptionFormPage extends StatefulWidget {
 
 class _InscriptionFormPageState extends State<InscriptionFormPage> {
   final _formKey       = GlobalKey<FormState>();
-  final _insCtrl       = Get.find<InscriptionController>();
-  final _configCtrl    = Get.find<ConfigController>();
-  final _etudiantCtrl  = Get.find<EtudiantController>();
+  final _insCtrl = Get.isRegistered<InscriptionController>()
+      ? Get.find<InscriptionController>()
+      : Get.put(InscriptionController(), permanent: true);
+  final _configCtrl = Get.isRegistered<ConfigController>()
+      ? Get.find<ConfigController>()
+      : Get.put(ConfigController(), permanent: true);
+  final _etudiantCtrl = Get.isRegistered<EtudiantController>()
+      ? Get.find<EtudiantController>()
+      : Get.put(EtudiantController(), permanent: true);
 
   int? _selectedEtudiant;
   int? _selectedFiliere;
@@ -26,6 +32,14 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
   String _typeInscription = 'Nouvelle';
 
   final _searchCtrl = TextEditingController();
+
+  int? _defaultAnneeId(List<dynamic> annees) {
+    if (annees.isEmpty) return null;
+    for (final a in annees) {
+      if (a.estCourante == true) return a.idAnneeAcademique as int?;
+    }
+    return annees.first.idAnneeAcademique as int?;
+  }
 
   @override
   void dispose() {
@@ -92,8 +106,15 @@ class _InscriptionFormPageState extends State<InscriptionFormPage> {
                 children: [
                   Obx(() {
                     final annees = _configCtrl.annees;
+                    final effectiveAnnee = _selectedAnnee ?? _defaultAnneeId(annees);
+                    if (_selectedAnnee == null && effectiveAnnee != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted || _selectedAnnee != null) return;
+                        setState(() => _selectedAnnee = effectiveAnnee);
+                      });
+                    }
                     return DropdownButtonFormField<int>(
-                      initialValue: _selectedAnnee,
+                      initialValue: effectiveAnnee,
                       isExpanded: true,
                       decoration: _inputDecoration('Année académique *'),
                       items: annees

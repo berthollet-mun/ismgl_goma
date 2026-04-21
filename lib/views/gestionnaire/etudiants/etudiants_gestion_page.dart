@@ -87,6 +87,7 @@ class _EtudiantsGestionPageState extends State<EtudiantsGestionPage> {
         label: const Text('Nouvel Étudiant'),
         icon: const Icon(Icons.person_add_rounded),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [

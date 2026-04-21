@@ -71,9 +71,12 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             ? null
             : () async {
                 setState(() => _isCreating = true);
-                await Get.toNamed(AppRoutes.caissierNouveauPaiement);
-                await _load();
-                if (mounted) setState(() => _isCreating = false);
+                try {
+                  await Get.toNamed(AppRoutes.caissierNouveauPaiement);
+                  await _load();
+                } finally {
+                  if (mounted) setState(() => _isCreating = false);
+                }
               },
         label: _isCreating
             ? const SizedBox(
@@ -84,6 +87,7 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             : const Text('Nouveau Paiement'),
         icon: _isCreating ? null : const Icon(Icons.add),
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }

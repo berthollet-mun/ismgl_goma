@@ -80,5 +80,14 @@ class LightTheme {
       selectedLabelStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
       unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
     ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: AppTheme.primary,
+      foregroundColor: Colors.white,
+      extendedTextStyle: GoogleFonts.poppins(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
   );
 }
