@@ -79,19 +79,36 @@ class _RecusPageState extends State<RecusPage> {
 
     setState(() => _isGenerating = true);
     try {
-      debugPrint('🧾 Téléchargement reçu caissier id=$id');
+      // 1) Génération (retourne souvent un fichier HTML dans `pdf_url`).
+      debugPrint('🧾 Generate reçu caissier id=$id');
+      final gen = await _api.get('/recus/$id/generate');
+      if (gen['success'] == true) {
+        final ref = DownloadShareHelper.extractExportFileRef(gen['data']);
+        if (ref != null && ref.isNotEmpty) {
+          final ext = ref.toLowerCase().endsWith('.pdf') ? 'pdf' : 'html';
+          final name = 'recu_$id.$ext';
+          final ok = await DownloadShareHelper.downloadExportAndShare(
+            _api,
+            ref,
+            name,
+          );
+          if (ok) {
+            AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
+            return;
+          }
+        }
+      }
+
+      // 2) Fallback : téléchargement direct.
+      debugPrint('🧾 Fallback download reçu caissier id=$id');
       final bytes = await _api.fetchBytes('/recus/$id/download');
       if (bytes == null || bytes.isEmpty) {
-        AppHelpers.showError('Impossible de télécharger le reçu');
+        AppHelpers.showError(gen['message']?.toString() ?? 'Impossible de télécharger le reçu');
         return;
       }
       final name = 'recu_$id.${_extensionRecu(bytes)}';
       final ok = await DownloadShareHelper.shareBytes(bytes, name);
-      if (ok) {
-        AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
-      } else {
-        AppHelpers.showError('Partage du reçu impossible');
-      }
+      if (ok) AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
     } finally {
       if (mounted) setState(() => _isGenerating = false);
     }

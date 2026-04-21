@@ -48,9 +48,28 @@ class RecuController extends GetxController {
     isGenerating.value = true;
     try {
       final api = Get.find<ApiService>();
+
+      // 1) Génération (retourne souvent une URL de fichier HTML/PDF).
+      final gen = await _service.generateRecu(id);
+      if (gen['success'] == true) {
+        final ref = DownloadShareHelper.extractExportFileRef(gen['data']);
+        if (ref != null && ref.isNotEmpty) {
+          final ext = ref.toLowerCase().endsWith('.pdf') ? 'pdf' : 'html';
+          final name = 'recu_$id.$ext';
+          final ok =
+              await DownloadShareHelper.downloadExportAndShare(api, ref, name);
+          if (ok) {
+            pdfUrl.value = ref;
+            AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
+            return;
+          }
+        }
+      }
+
+      // 2) Fallback : téléchargement direct.
       final bytes = await api.fetchBytes('/recus/$id/download');
       if (bytes == null || bytes.isEmpty) {
-        AppHelpers.showError('Impossible de télécharger le reçu');
+        AppHelpers.showError(gen['message']?.toString() ?? 'Impossible de télécharger le reçu');
         return;
       }
       final name = 'recu_$id.${_extensionRecu(bytes)}';
@@ -58,8 +77,6 @@ class RecuController extends GetxController {
       if (ok) {
         pdfUrl.value = name;
         AppHelpers.showSuccess('Reçu prêt — enregistrez ou partagez');
-      } else {
-        AppHelpers.showError('Partage du reçu impossible');
       }
     } finally {
       isGenerating.value = false;
