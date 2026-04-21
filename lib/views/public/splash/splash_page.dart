@@ -58,6 +58,9 @@ class _SplashPageState extends State<SplashPage>
         case 'Etudiant':
           Get.offAllNamed(AppRoutes.etudiantDashboard);
           break;
+        case 'Comptable':
+          Get.offAllNamed(AppRoutes.adminRapports);
+          break;
         default:
           Get.offAllNamed(AppRoutes.login);
       }

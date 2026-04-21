@@ -147,6 +147,15 @@ class _CaissierDashboardPageState extends State<CaissierDashboardPage> {
             () => Get.toNamed(AppRoutes.caissierRecus),
           ),
         ),
+        SizedBox(
+          width: (MediaQuery.of(context).size.width - 44) / 2,
+          child: _QuickCard(
+            'Rapport',
+            Icons.summarize_outlined,
+            AppTheme.info,
+            () => Get.toNamed(AppRoutes.caissierRapport),
+          ),
+        ),
       ],
     );
   }

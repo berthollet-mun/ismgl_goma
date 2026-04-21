@@ -27,6 +27,7 @@ import 'package:ismgl/views/caissier/paiements/nouveau_paiement_page.dart';
 import 'package:ismgl/views/caissier/paiements/paiement_detail_page.dart';
 import 'package:ismgl/views/caissier/recus/recus_page.dart';
 import 'package:ismgl/views/caissier/recus/recu_detail_page.dart';
+import 'package:ismgl/views/caissier/rapports/rapport_caisse_page.dart';
 
 // Gestionnaire Views
 import 'package:ismgl/views/gestionnaire/etudiants/etudiants_gestion_page.dart';
@@ -147,6 +148,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.caissierRecuDetail,
       page: () => const RecuDetailPage(),
+      middlewares: [AuthMiddleware(allowedRoles: ['Caissier', 'Administrateur'])],
+    ),
+    GetPage(
+      name: AppRoutes.caissierRapport,
+      page: () => const RapportCaissePage(),
       middlewares: [AuthMiddleware(allowedRoles: ['Caissier', 'Administrateur'])],
     ),
 

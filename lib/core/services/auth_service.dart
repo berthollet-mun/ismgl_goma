@@ -157,6 +157,7 @@ class AuthService extends GetxService {
       case 'Caissier':       return AppRoutes.caissierDashboard;
       case 'Gestionnaire':   return AppRoutes.gestionDashboard;
       case 'Etudiant':       return AppRoutes.etudiantDashboard;
+      case 'Comptable':      return AppRoutes.adminRapports;
       default:               return AppRoutes.login;
     }
   }
