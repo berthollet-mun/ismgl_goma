@@ -4,9 +4,6 @@ import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/controllers/config_controller.dart';
 import 'package:ismgl/controllers/inscription_controller.dart';
 import 'package:ismgl/controllers/etudiant_controller.dart';
-import 'package:ismgl/data/models/annee_academique_model.dart';
-import 'package:ismgl/data/models/filiere_model.dart';
-import 'package:ismgl/data/models/niveau_model.dart';
 import 'package:ismgl/core/utils/helpers.dart';
 
 class InscriptionFormPage extends StatefulWidget {

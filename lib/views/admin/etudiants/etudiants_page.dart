@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
@@ -7,10 +6,8 @@ import 'package:ismgl/core/utils/helpers.dart';
 import 'package:ismgl/data/models/etudiant_model.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
 import 'package:ismgl/views/shared/widgets/empty_state.dart';
-import 'package:ismgl/views/shared/widgets/error_widget.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 import 'package:ismgl/views/shared/widgets/status_chip.dart';
-import 'package:ismgl/views/shared/widgets/role_badge.dart';
 
 class EtudiantsPage extends GetView<EtudiantController> {
   const EtudiantsPage({super.key});

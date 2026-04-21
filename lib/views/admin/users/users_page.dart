@@ -63,11 +63,25 @@ class _UsersPageState extends State<UsersPage> {
 
     setState(() => _isLoading = true);
 
+    int? roleId;
+    if (_filterRole != null) {
+      roleId = switch (_filterRole) {
+        'Administrateur' => 1,
+        'Caissier' => 2,
+        'Gestionnaire' => 3,
+        'Etudiant' => 4,
+        'Comptable' => 5,
+        _ => null,
+      };
+    }
+
     final result = await _api.get('/users', params: {
       'page':      _currentPage,
       'page_size': 20,
       if (_search.isNotEmpty) 'search': _search,
-      if (_filterRole != null) 'role': _filterRole,
+      // Certains backends filtrent par id_role plutôt que nom_role.
+      if (roleId != null) 'id_role': roleId,
+      if (roleId == null && _filterRole != null) 'role': _filterRole,
     });
 
     if (result['success'] == true) {

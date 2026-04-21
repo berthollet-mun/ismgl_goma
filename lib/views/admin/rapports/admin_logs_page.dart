@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:ismgl/app/themes/app_theme.dart';
 import 'package:ismgl/controllers/rapport_controller.dart';
-import 'package:ismgl/data/models/log_activite_model.dart';
-import 'package:ismgl/data/responses/paginated_response.dart';
-import 'package:ismgl/core/services/rapport_service.dart';
 
 class AdminLogsPage extends StatefulWidget {
   const AdminLogsPage({super.key});

@@ -54,7 +54,9 @@ class _UserFormPageState extends State<UserFormPage> {
     _emailCtrl.text     = _editUser!.email;
     _telCtrl.text       = _editUser!.telephone ?? '';
     _matriculeCtrl.text = _editUser!.matricule;
-    _selectedRole       = _editUser!.idRole;
+    final roleId = _editUser!.idRole;
+    final exists = _roles.any((r) => (r['id'] as int) == roleId);
+    _selectedRole       = exists ? roleId : null;
     _estActif           = _editUser!.estActif;
   }
 

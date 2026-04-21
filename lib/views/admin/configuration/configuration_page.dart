@@ -45,6 +45,9 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 8, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadAll();
   }
 
@@ -86,6 +89,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    final fab = _buildFabForTab();
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Configuration',
@@ -134,21 +138,71 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                 ),
               ],
             ),
+      floatingActionButton: fab,
     );
+  }
+
+  Widget? _buildFabForTab() {
+    if (_isLoading) return null;
+    final idx = _tabController.index;
+
+    // 0 Années, 1 Frais (types), 2 Filières, 3 Facultés, 4 Départements,
+    // 5 Modes (lecture), 6 Frais scolarité (ajout via dialog), 7 Niveaux (lecture)
+    if (idx == 0) {
+      return FloatingActionButton.extended(
+        onPressed: _showAnneeDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nouvelle année'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    if (idx == 1) {
+      return FloatingActionButton.extended(
+        onPressed: _showTypeFraisDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nouveau frais'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    if (idx == 2) {
+      return FloatingActionButton.extended(
+        onPressed: _showFiliereDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nouvelle filière'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    if (idx == 3) {
+      return FloatingActionButton.extended(
+        onPressed: _showFaculteDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nouvelle faculté'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    if (idx == 4) {
+      return FloatingActionButton.extended(
+        onPressed: _showDepartementDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nouveau dept.'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    if (idx == 6) {
+      return FloatingActionButton.extended(
+        onPressed: _showFraisScolariteDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Ajouter un frais'),
+        backgroundColor: AppTheme.primary,
+      );
+    }
+    return null;
   }
 
   // ===== DÉPARTEMENTS =====
   Widget _buildDepartementsTab() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: AppButton(
-            label: 'Nouveau Département',
-            onPressed: _showDepartementDialog,
-            icon: Icons.add,
-          ),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -677,14 +731,6 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   Widget _buildAnneesTab() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: AppButton(
-            label: 'Nouvelle Année Académique',
-            onPressed: _showAnneeDialog,
-            icon: Icons.add,
-          ),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -866,10 +912,6 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   Widget _buildTypesFraisTab() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: AppButton(label: 'Nouveau Type de Frais', onPressed: _showTypeFraisDialog, icon: Icons.add),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1000,10 +1042,6 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   Widget _buildFilieresTab() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: AppButton(label: 'Nouvelle Filière', onPressed: _showFiliereDialog, icon: Icons.add),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1138,10 +1176,6 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
   Widget _buildFacultesTab() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: AppButton(label: 'Nouvelle Faculté', onPressed: _showFaculteDialog, icon: Icons.add),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

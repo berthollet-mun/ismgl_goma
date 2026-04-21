@@ -8,7 +8,6 @@ import 'package:ismgl/data/models/inscription_model.dart';
 import 'package:ismgl/views/shared/widgets/custom_app_bar.dart';
 import 'package:ismgl/views/shared/widgets/loading_widget.dart';
 import 'package:ismgl/views/shared/widgets/status_chip.dart';
-import 'package:ismgl/views/shared/widgets/role_badge.dart';
 
 class InscriptionPage extends StatefulWidget {
   const InscriptionPage({super.key});

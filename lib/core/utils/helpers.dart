@@ -17,34 +17,33 @@ class AppHelpers {
       final rootMessenger = rootScaffoldMessengerKey.currentState;
       final rootCtx = rootScaffoldMessengerKey.currentContext;
       if (rootMessenger != null && rootCtx != null) {
-        final mq = MediaQuery.of(rootCtx);
-        const barEstimate = 96.0;
-        final topInset = mq.padding.top + 8;
-        rootMessenger.clearSnackBars();
-        rootMessenger.showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                if (icon != null) ...[icon, const SizedBox(width: 8)],
-                Expanded(
-                  child: Text(
-                    '$title\n$message',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
+        // MaterialBanner = top of scaffold, never off-screen.
+        rootMessenger.clearMaterialBanners();
+        rootMessenger.showMaterialBanner(
+          MaterialBanner(
             backgroundColor: backgroundColor,
-            duration: Duration(seconds: seconds),
-            margin: EdgeInsets.only(
-              left: 12,
-              right: 12,
-              bottom: (mq.size.height - topInset - barEstimate)
-                  .clamp(8.0, mq.size.height),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            leading: icon,
+            content: Text(
+              '$title\n$message',
+              style: const TextStyle(color: Colors.white),
             ),
+            actions: [
+              TextButton(
+                onPressed: rootMessenger.hideCurrentMaterialBanner,
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
         );
+        Future<void>.delayed(Duration(seconds: seconds)).then((_) {
+          try {
+            rootMessenger.hideCurrentMaterialBanner();
+          } catch (_) {}
+        });
         return;
       }
 
