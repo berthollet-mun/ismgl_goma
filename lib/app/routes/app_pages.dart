@@ -208,8 +208,20 @@ class AppPages {
     ),
 
     // ── Shared ──────────────────────────────────────────────────────────────
-    GetPage(name: AppRoutes.profile,        page: () => const ProfilePage()),
-    GetPage(name: AppRoutes.changePassword, page: () => const ChangePasswordPage()),
-    GetPage(name: AppRoutes.notifications,  page: () => const NotificationsPage()),
+    GetPage(
+      name: AppRoutes.profile,
+      page: () => const ProfilePage(),
+      middlewares: [AuthMiddleware(allowedRoles: const <String>[])],
+    ),
+    GetPage(
+      name: AppRoutes.changePassword,
+      page: () => const ChangePasswordPage(),
+      middlewares: [AuthMiddleware(allowedRoles: const <String>[])],
+    ),
+    GetPage(
+      name: AppRoutes.notifications,
+      page: () => const NotificationsPage(),
+      middlewares: [AuthMiddleware(allowedRoles: const <String>[])],
+    ),
   ];
 }

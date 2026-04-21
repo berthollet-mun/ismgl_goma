@@ -15,6 +15,7 @@ class StorageService {
   static const _userRoleKey     = 'user_role';
   static const _userRoleIdKey   = 'user_role_id';
   static const _userMatriculeKey = 'user_matricule';
+  static const _userTelephoneKey = 'user_telephone';
   static const _userPhotoKey    = 'user_photo';
   static const _themeKey        = 'theme_mode';
   static const _etudiantIdKey   = 'etudiant_id';
@@ -53,6 +54,7 @@ class StorageService {
     required String role,
     required int roleId,
     required String matricule,
+    String? telephone,
     String? photo,
     int? etudiantId,
   }) async {
@@ -64,6 +66,7 @@ class StorageService {
       _prefs.setString(_userRoleKey, role),
       _prefs.setInt(_userRoleIdKey, roleId),
       _prefs.setString(_userMatriculeKey, matricule),
+      if (telephone != null) _prefs.setString(_userTelephoneKey, telephone),
       if (photo != null) _prefs.setString(_userPhotoKey, photo),
       if (etudiantId != null) _prefs.setInt(_etudiantIdKey, etudiantId),
     ]);
@@ -76,6 +79,7 @@ class StorageService {
   String? getUserRole()  => _prefs.getString(_userRoleKey);
   int? getUserRoleId()   => _prefs.getInt(_userRoleIdKey);
   String? getMatricule() => _prefs.getString(_userMatriculeKey);
+  String? getUserTelephone() => _prefs.getString(_userTelephoneKey);
   String? getUserPhoto() => _prefs.getString(_userPhotoKey);
   int? getEtudiantId()   => _prefs.getInt(_etudiantIdKey);
 
@@ -95,7 +99,7 @@ class StorageService {
   Future<void> clearSession() async {
     final keys = [_tokenKey, _refreshTokenKey, _tokenExpiryKey, _userIdKey,
                   _userNomKey, _userPrenomKey, _userEmailKey, _userRoleKey,
-                  _userRoleIdKey, _userMatriculeKey, _userPhotoKey, _etudiantIdKey];
+                  _userRoleIdKey, _userMatriculeKey, _userTelephoneKey, _userPhotoKey, _etudiantIdKey];
     await Future.wait(keys.map((k) => _prefs.remove(k)));
   }
 

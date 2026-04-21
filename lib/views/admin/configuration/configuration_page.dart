@@ -288,7 +288,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                   children: [
                     DropdownButtonFormField<int>(
                       isExpanded: true,
-                      value: selectedFaculte,
+                      initialValue: selectedFaculte,
                       decoration:
                           const InputDecoration(labelText: 'Faculté'),
                       items: _facultes
@@ -442,7 +442,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
             isExpanded: true,
-            value: _selectedAnneeId,
+            initialValue: _selectedAnneeId,
             decoration: const InputDecoration(labelText: 'Année académique'),
             items: _annees
                 .map(
@@ -461,7 +461,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
             isExpanded: true,
-            value: _selectedFiliereId,
+            initialValue: _selectedFiliereId,
             decoration: const InputDecoration(labelText: 'Filière'),
             items: _filieres
                 .map(
@@ -480,7 +480,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
             isExpanded: true,
-            value: _selectedNiveauId,
+            initialValue: _selectedNiveauId,
             decoration: const InputDecoration(labelText: 'Niveau'),
             items: _niveaux
                 .map(
@@ -497,26 +497,52 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
             onChanged: (v) => setState(() => _selectedNiveauId = v),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: AppButton(
-                  label: 'Charger les frais',
-                  icon: Icons.refresh,
-                  isLoading: _isLoadingFraisScolarite,
-                  onPressed: _isLoadingFraisScolarite
-                      ? null
-                      : () => _loadFraisScolarite(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              AppButton(
-                width: 48,
-                label: '',
-                icon: Icons.add,
-                onPressed: _showFraisScolariteDialog,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppButton(
+                      label: 'Charger les frais',
+                      icon: Icons.refresh,
+                      isLoading: _isLoadingFraisScolarite,
+                      onPressed: _isLoadingFraisScolarite
+                          ? null
+                          : () => _loadFraisScolarite(),
+                    ),
+                    const SizedBox(height: 10),
+                    AppButton(
+                      label: 'Ajouter',
+                      icon: Icons.add,
+                      onPressed: _showFraisScolariteDialog,
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Charger les frais',
+                      icon: Icons.refresh,
+                      isLoading: _isLoadingFraisScolarite,
+                      onPressed: _isLoadingFraisScolarite
+                          ? null
+                          : () => _loadFraisScolarite(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  AppButton(
+                    width: 48,
+                    label: '',
+                    icon: Icons.add,
+                    onPressed: _showFraisScolariteDialog,
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           if (_isLoadingFraisScolarite) const LinearProgressIndicator(),
@@ -536,10 +562,10 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                   const Icon(Icons.summarize_outlined,
                       color: AppTheme.success),
                   const SizedBox(width: 10),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Total',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                   Text(
@@ -653,7 +679,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                   children: [
                     DropdownButtonFormField<int>(
                       isExpanded: true,
-                      value: selectedTypeFrais,
+                      initialValue: selectedTypeFrais,
                       decoration:
                           const InputDecoration(labelText: 'Type de frais'),
                       items: _typesFrais
@@ -1106,7 +1132,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> with SingleTicker
                 children: [
                   DropdownButtonFormField<int>(
                     isExpanded: true,
-                    value: selectedDepartement,
+                    initialValue: selectedDepartement,
                     decoration:
                         const InputDecoration(labelText: 'Département'),
                     items: _departements

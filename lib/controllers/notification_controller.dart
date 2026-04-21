@@ -23,22 +23,55 @@ class NotificationController extends GetxController {
     return int.tryParse(v.toString()) ?? 0;
   }
 
+  List<dynamic> _extractNotifications(dynamic resultData, Map<String, dynamic> fullResult) {
+    if (resultData is List) return resultData;
+
+    Map<String, dynamic>? mapData;
+    if (resultData is Map<String, dynamic>) {
+      mapData = resultData;
+    } else if (fullResult['data'] is Map<String, dynamic>) {
+      mapData = fullResult['data'] as Map<String, dynamic>;
+    } else {
+      mapData = fullResult;
+    }
+
+    final possibleLists = <dynamic>[
+      mapData['notifications'],
+      mapData['items'],
+      mapData['results'],
+      mapData['rows'],
+      mapData['data'],
+    ];
+
+    for (final candidate in possibleLists) {
+      if (candidate is List) return candidate;
+    }
+    return <dynamic>[];
+  }
+
+  int _extractUnreadCount(Map<String, dynamic> source) {
+    return _asInt(
+      source['total_non_lues'] ??
+          source['non_lues'] ??
+          source['count_non_lues'] ??
+          source['count'] ??
+          source['unread_count'],
+    );
+  }
+
   Future<void> loadNotifications() async {
     isLoading.value = true;
     try {
       final result = await _service.getNotifications();
       if (result['success'] == true) {
         final raw = result['data'];
-        List<dynamic> list = [];
+        final list = _extractNotifications(raw, result);
         var unread = 0;
-
-        if (raw is List) {
-          list = raw;
-        } else if (raw is Map<String, dynamic>) {
-          list = (raw['notifications'] as List<dynamic>?) ?? [];
-          unread = _asInt(
-            raw['total_non_lues'] ?? raw['non_lues'] ?? raw['count_non_lues'],
-          );
+        if (raw is Map<String, dynamic>) {
+          unread = _extractUnreadCount(raw);
+        }
+        if (unread == 0) {
+          unread = _extractUnreadCount(result);
         }
 
         notifications.value = list
@@ -67,11 +100,11 @@ class NotificationController extends GetxController {
       if (result['success'] == true) {
         final d = result['data'];
         if (d is Map<String, dynamic>) {
-          unreadCount.value = _asInt(
-            d['count'] ?? d['non_lues'] ?? d['total_non_lues'],
-          );
+          unreadCount.value = _extractUnreadCount(d);
         } else if (d is int) {
           unreadCount.value = d;
+        } else {
+          unreadCount.value = _extractUnreadCount(result);
         }
       }
     } catch (_) {}

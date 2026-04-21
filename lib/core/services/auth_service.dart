@@ -133,6 +133,7 @@ class AuthService extends GetxService {
       role:       user.nomRole,
       roleId:     user.idRole,
       matricule:  user.matricule,
+      telephone:  user.telephone,
       photo:      user.photoProfil,
     );
   }

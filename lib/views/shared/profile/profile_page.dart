@@ -77,7 +77,7 @@ class ProfilePage extends StatelessWidget {
             // Infos
             _buildInfoCard([
               _InfoTile(Icons.badge_outlined, 'Matricule', storage.getMatricule() ?? 'N/A'),
-              _InfoTile(Icons.phone_outlined, 'Téléphone', storage.getUserNom() ?? 'N/A'),
+              _InfoTile(Icons.phone_outlined, 'Téléphone', storage.getUserTelephone() ?? 'N/A'),
             ]),
             const SizedBox(height: 12),
 
